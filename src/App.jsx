@@ -1,10 +1,8 @@
-import React, { useState, useRef } from 'react';
-import { Home, Edit3, Image as ImageIcon, Settings, MessageSquare, Sparkles, Languages, Download } from 'lucide-react';
 import React, { useState, useRef, useEffect } from 'react';
+import { Home, Edit3, Image as ImageIcon, Settings, MessageSquare, Sparkles, Languages, Download } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import './App.css';
 import { BACKGROUND_CATEGORIES } from './backgroundData';
-
 function App() {
   const [mode, setMode] = useState('manual'); // 'manual' | 'ai'
   const [koreanText, setKoreanText] = useState('');
@@ -12,15 +10,54 @@ function App() {
   const [isTranslating, setIsTranslating] = useState(false);
   const [bgStyle, setBgStyle] = useState('paper');
   const [activeCategory, setActiveCategory] = useState('Colors');
+  const [activeView, setActiveView] = useState('home');
   const [aspectRatio, setAspectRatio] = useState('1:1'); // '1:1' | '16:9'
   const [fontFamily, setFontFamily] = useState('Georgia, serif');
   const [apiKey, setApiKey] = useState(localStorage.getItem('openai_api_key') || '');
+  const [aiProvider, setAiProvider] = useState(localStorage.getItem('ai_provider') || 'openai');
+  const [geminiKey, setGeminiKey] = useState(localStorage.getItem('gemini_api_key') || '');
+  const [bgBlur, setBgBlur] = useState(0);
+  const [bgOpacity, setBgOpacity] = useState(30);
+  const [useGlassmorphism, setUseGlassmorphism] = useState(false);
   
   const canvasRef = useRef(null);
+
+  useEffect(() => {
+    let foundBg = null;
+    for (const category of Object.values(BACKGROUND_CATEGORIES)) {
+      const found = category.find(b => b.id === bgStyle);
+      if (found) {
+        foundBg = found;
+        break;
+      }
+    }
+    if (foundBg && foundBg.type === 'image') {
+      const match = foundBg.overlay.match(/rgba\(0,\s*0,\s*0,\s*([0-9.]+)\)/);
+      if (match) {
+        setBgOpacity(Math.round(parseFloat(match[1]) * 100));
+      } else {
+        setBgOpacity(30);
+      }
+      setBgBlur(0);
+      setUseGlassmorphism(false);
+    } else {
+      setBgOpacity(0);
+    }
+  }, [bgStyle]);
 
   const handleApiKeyChange = (e) => {
     setApiKey(e.target.value);
     localStorage.setItem('openai_api_key', e.target.value);
+  };
+
+  const handleGeminiKeyChange = (e) => {
+    setGeminiKey(e.target.value);
+    localStorage.setItem('gemini_api_key', e.target.value);
+  };
+
+  const handleProviderChange = (e) => {
+    setAiProvider(e.target.value);
+    localStorage.setItem('ai_provider', e.target.value);
   };
 
   const handleTranslate = async () => {
@@ -29,31 +66,62 @@ function App() {
     
     try {
       if (mode === 'ai') {
-        if (!apiKey) {
-          alert("AI 글 생성 기능을 사용하려면 OpenAI API Key를 아래 설정에 입력해주세요.");
-          setIsTranslating(false);
-          return;
-        }
+        if (aiProvider === 'openai') {
+          if (!apiKey) {
+            alert("AI 글 생성 기능을 사용하려면 OpenAI API Key를 설정 탭에 입력해주세요.");
+            setIsTranslating(false);
+            return;
+          }
 
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`
-          },
-          body: JSON.stringify({
-            model: 'gpt-3.5-turbo',
-            messages: [
-              { role: 'system', content: 'You are an expert social media manager. Create an engaging, viral X (Twitter) post in English based on the following user input. Keep it under 280 characters. Output ONLY the English text.' },
-              { role: 'user', content: koreanText }
-            ]
-          })
-        });
-        const data = await response.json();
-        if (data.choices && data.choices[0]) {
-          setEnglishText(data.choices[0].message.content);
-        } else {
-          setEnglishText("AI API 에러: 키가 올바르지 않거나 한도를 초과했습니다.");
+          const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+              model: 'gpt-3.5-turbo',
+              messages: [
+                { role: 'system', content: 'You are an expert social media manager. Create an engaging, viral X (Twitter) post in English based on the following user input. Keep it under 280 characters. Output ONLY the English text.' },
+                { role: 'user', content: koreanText }
+              ]
+            })
+          });
+          const data = await response.json();
+          if (data.choices && data.choices[0]) {
+            setEnglishText(data.choices[0].message.content);
+          } else {
+            setEnglishText("OpenAI API 에러: 키가 올바르지 않거나 한도를 초과했습니다.");
+          }
+        } else if (aiProvider === 'gemini') {
+          if (!geminiKey) {
+            alert("AI 글 생성 기능을 사용하려면 Google Gemini API Key를 설정 탭에 입력해주세요.");
+            setIsTranslating(false);
+            return;
+          }
+
+          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              contents: [
+                {
+                  role: "user",
+                  parts: [
+                    { text: "You are an expert social media manager. Create an engaging, viral X (Twitter) post in English based on the following user input. Keep it under 280 characters. Output ONLY the English text.\n\nInput: " + koreanText }
+                  ]
+                }
+              ]
+            })
+          });
+          const data = await response.json();
+          if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0]) {
+            setEnglishText(data.candidates[0].content.parts[0].text.trim());
+          } else {
+            setEnglishText("Gemini API 에러: 키가 올바르지 않거나 요청이 거부되었습니다.");
+          }
         }
       } else {
         // Using a free translation API (MyMemory) for real translation
@@ -115,25 +183,27 @@ function App() {
           <span>Maker</span>
         </div>
         
-        <a href="#" className="nav-item active">
+        <a href="#" className={`nav-item ${activeView === 'home' ? 'active' : ''}`} onClick={(e) => { e.preventDefault(); setActiveView('home'); }}>
           <Home size={28} />
           <span>Home</span>
         </a>
-        <a href="#" className="nav-item">
+        <a href="#" className={`nav-item ${activeView === 'drafts' ? 'active' : ''}`} onClick={(e) => { e.preventDefault(); setActiveView('drafts'); }}>
           <Edit3 size={28} />
           <span>Drafts</span>
         </a>
-        <a href="#" className="nav-item">
+        <a href="#" className={`nav-item ${activeView === 'backgrounds' ? 'active' : ''}`} onClick={(e) => { e.preventDefault(); setActiveView('backgrounds'); }}>
           <ImageIcon size={28} />
           <span>Backgrounds</span>
         </a>
-        <a href="#" className="nav-item">
+        <a href="#" className={`nav-item ${activeView === 'settings' ? 'active' : ''}`} onClick={(e) => { e.preventDefault(); setActiveView('settings'); }}>
           <Settings size={28} />
           <span>Settings</span>
         </a>
       </nav>
 
       <main className="main-content">
+        {activeView === 'home' && (
+          <>
         {/* Editor Panel */}
         <section className="editor-panel">
           <header className="panel-header">
@@ -238,15 +308,71 @@ function App() {
                     onClick={() => setBgStyle(bg.id)}
                     title={bg.title}
                     style={{
-                      background: bg.type === 'image' ? `#2a2a35 url('${bg.value}') center/cover no-repeat` : bg.value,
+                      background: bg.type === 'image' ? `url('${bg.value}') center/cover no-repeat` : bg.value,
                       border: bgStyle === bg.id ? '3px solid var(--accent-color)' : '2px solid transparent',
                       boxSizing: 'border-box'
                     }}
-                  >
-                    {/* If image fails, at least show some text or it's a gray circle */}
-                  </button>
+                  />
                 ))}
               </div>
+
+              {/* Contrast & Readability Controls */}
+              {currentBgObj.type === 'image' && (
+                <div className="contrast-controls" style={{ 
+                  marginTop: '16px', 
+                  padding: '16px', 
+                  backgroundColor: 'var(--glass-bg)', 
+                  borderRadius: '12px', 
+                  border: '1px solid var(--glass-border)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px'
+                }}>
+                  <h4 style={{ margin: 0, fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>배경 대비 및 가독성 설정</h4>
+                  
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                      <span>배경 어둡기 (오버레이)</span>
+                      <span>{bgOpacity}%</span>
+                    </div>
+                    <input 
+                      type="range" 
+                      min="0" 
+                      max="90" 
+                      value={bgOpacity} 
+                      onChange={(e) => setBgOpacity(parseInt(e.target.value))}
+                      style={{ width: '100%', height: '6px', borderRadius: '3px', accentColor: 'var(--accent-color)', cursor: 'pointer' }}
+                    />
+                  </div>
+
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                      <span>배경 흐림 (Blur)</span>
+                      <span>{bgBlur}px</span>
+                    </div>
+                    <input 
+                      type="range" 
+                      min="0" 
+                      max="20" 
+                      value={bgBlur} 
+                      onChange={(e) => setBgBlur(parseInt(e.target.value))}
+                      style={{ width: '100%', height: '6px', borderRadius: '3px', accentColor: 'var(--accent-color)', cursor: 'pointer' }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px', paddingTop: '8px', borderTop: '1px solid var(--glass-border)' }}>
+                    <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>글래스모피즘 카드 박스</span>
+                    <label className="switch">
+                      <input 
+                        type="checkbox" 
+                        checked={useGlassmorphism} 
+                        onChange={(e) => setUseGlassmorphism(e.target.checked)}
+                      />
+                      <span className="slider" />
+                    </label>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div style={{ display: 'flex', gap: '16px', marginTop: '24px' }}>
@@ -294,31 +420,6 @@ function App() {
               </div>
             </div>
 
-            {mode === 'ai' && (
-              <div className="input-group" style={{ marginTop: '32px', borderTop: '1px solid var(--border-color)', paddingTop: '24px' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Settings size={16} /> AI 설정 (OpenAI API Key)
-                </label>
-                <input 
-                  type="password"
-                  placeholder="sk-..."
-                  value={apiKey}
-                  onChange={handleApiKeyChange}
-                  style={{
-                    backgroundColor: 'var(--glass-bg)',
-                    border: '1px solid var(--glass-border)',
-                    borderRadius: '8px',
-                    padding: '12px',
-                    fontSize: '14px',
-                    color: 'var(--text-primary)'
-                  }}
-                />
-                <small style={{ color: 'var(--text-secondary)', marginTop: '8px', fontSize: '12px' }}>
-                  입력하신 키는 브라우저에만 저장되며 외부로 전송되지 않습니다.
-                </small>
-              </div>
-            )}
-
           </div>
         </section>
 
@@ -332,29 +433,207 @@ function App() {
             </button>
           </header>
           <div className="preview-container">
-            <div className="canvas-wrapper">
+            <div className="canvas-wrapper" style={{ borderRadius: '8px', overflow: 'hidden' }}>
               <div 
                 className={`canvas-bg ${aspectRatio === '16:9' ? 'ratio-16-9' : ''}`} 
                 ref={canvasRef}
                 style={{
-                  background: currentBgObj.type === 'image' ? `linear-gradient(${currentBgObj.overlay}, ${currentBgObj.overlay}), url('${currentBgObj.value}') center/cover no-repeat` : currentBgObj.value,
+                  position: 'relative',
+                  overflow: 'hidden',
+                  background: currentBgObj.type === 'color' ? currentBgObj.value : '#000',
+                  padding: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
                 }}
               >
+                {/* Background image layer with blur */}
+                {currentBgObj.type === 'image' && (
+                  <div style={{
+                    position: 'absolute',
+                    top: -10, // Slight overflow to prevent border artifacts from blur
+                    left: -10,
+                    right: -10,
+                    bottom: -10,
+                    background: `url('${currentBgObj.value}') center/cover no-repeat`,
+                    filter: `blur(${bgBlur}px)`,
+                    zIndex: 1
+                  }} />
+                )}
+
+                {/* Dark overlay layer */}
+                {currentBgObj.type === 'image' && (
+                  <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: `rgba(0, 0, 0, ${bgOpacity / 100})`,
+                    zIndex: 2
+                  }} />
+                )}
+
+                {/* Text content container */}
                 <div 
-                  className="canvas-text" 
-                  style={{ 
-                    whiteSpace: 'pre-wrap', 
-                    fontFamily: fontFamily,
-                    color: currentBgObj.textColor,
-                    textShadow: currentBgObj.textShadow
+                  style={{
+                    position: 'relative',
+                    zIndex: 3,
+                    width: '100%',
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '40px',
+                    boxSizing: 'border-box'
                   }}
                 >
-                  {englishText || 'Your text will appear here...'}
+                  <div 
+                    className={`canvas-text ${useGlassmorphism ? 'glassmorphism-card' : ''}`} 
+                    style={{ 
+                      whiteSpace: 'pre-wrap', 
+                      fontFamily: fontFamily,
+                      color: useGlassmorphism ? '#ffffff' : currentBgObj.textColor,
+                      textShadow: useGlassmorphism ? 'none' : (currentBgObj.textShadow !== 'none' ? `0 2px 12px rgba(0,0,0,${Math.max(0.3, (bgOpacity / 100) * 1.5)})` : 'none'),
+                      width: useGlassmorphism ? '85%' : '100%',
+                      padding: useGlassmorphism ? '24px 30px' : '0',
+                      boxSizing: 'border-box',
+                      textAlign: 'center'
+                    }}
+                  >
+                    {englishText || 'Your text will appear here...'}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </section>
+        </>
+        )}
+
+        {activeView === 'drafts' && (
+          <section className="view-panel" style={{ width: '100%', padding: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
+            <Edit3 size={64} style={{ marginBottom: '24px', opacity: 0.5 }} />
+            <h2>No Drafts Yet</h2>
+            <p style={{ marginTop: '8px' }}>Save your posts here to work on them later.</p>
+          </section>
+        )}
+
+        {activeView === 'backgrounds' && (
+          <section className="view-panel" style={{ width: '100%', padding: '40px', overflowY: 'auto' }}>
+            <h2 style={{ marginBottom: '32px' }}>Background Gallery</h2>
+            {Object.keys(BACKGROUND_CATEGORIES).map(cat => (
+              <div key={cat} style={{ marginBottom: '40px' }}>
+                <h3 style={{ marginBottom: '16px', color: 'var(--text-primary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>{cat}</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '16px' }}>
+                  {BACKGROUND_CATEGORIES[cat].map(bg => (
+                    <div 
+                      key={bg.id} 
+                      title={bg.title}
+                      style={{
+                        aspectRatio: '1',
+                        borderRadius: '8px',
+                        background: bg.type === 'image' ? `url('${bg.value}') center/cover no-repeat` : bg.value,
+                        cursor: 'pointer',
+                        border: bgStyle === bg.id ? '3px solid var(--accent-color)' : '1px solid var(--border-color)',
+                        boxSizing: 'border-box'
+                      }}
+                      onClick={() => {
+                        setBgStyle(bg.id);
+                        setActiveCategory(cat);
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </section>
+        )}
+
+        {activeView === 'settings' && (
+          <section className="view-panel" style={{ width: '100%', padding: '40px' }}>
+            <h2 style={{ marginBottom: '32px' }}>Settings</h2>
+            
+            <div className="settings-card" style={{ backgroundColor: 'var(--glass-bg)', padding: '32px', borderRadius: '16px', border: '1px solid var(--glass-border)', maxWidth: '600px', boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
+                <Settings size={28} color="var(--accent-color)" /> 
+                <h3 style={{ margin: 0, fontSize: '22px' }}>AI Configuration</h3>
+              </div>
+              
+              <div style={{ marginBottom: '24px', paddingBottom: '24px', borderBottom: '1px solid var(--glass-border)' }}>
+                <label style={{ display: 'block', marginBottom: '12px', fontWeight: 'bold', color: 'var(--text-primary)' }}>Select AI Provider</label>
+                <select 
+                  value={aiProvider}
+                  onChange={handleProviderChange}
+                  style={{
+                    width: '100%',
+                    backgroundColor: 'rgba(0,0,0,0.3)',
+                    border: '1px solid var(--glass-border)',
+                    borderRadius: '10px',
+                    padding: '14px',
+                    fontSize: '16px',
+                    color: 'var(--text-primary)',
+                    outline: 'none',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value="openai">OpenAI (ChatGPT-3.5)</option>
+                  <option value="gemini">Google Gemini (Gemini 1.5 Flash)</option>
+                </select>
+              </div>
+
+              {aiProvider === 'openai' && (
+                <div style={{ animation: 'fadeIn 0.3s ease' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: 'var(--text-primary)' }}>OpenAI API Key</label>
+                  <p style={{ color: 'var(--text-secondary)', marginBottom: '16px', fontSize: '14px', lineHeight: '1.5' }}>
+                    Required for the "AI Writer" feature using ChatGPT. Your key is stored securely in your browser's local storage.
+                  </p>
+                  <input 
+                    type="password"
+                    placeholder="sk-..."
+                    value={apiKey}
+                    onChange={handleApiKeyChange}
+                    style={{
+                      width: '100%',
+                      backgroundColor: 'rgba(0,0,0,0.2)',
+                      border: '1px solid var(--accent-color)',
+                      borderRadius: '8px',
+                      padding: '14px',
+                      fontSize: '15px',
+                      color: 'var(--text-primary)',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+              )}
+
+              {aiProvider === 'gemini' && (
+                <div style={{ animation: 'fadeIn 0.3s ease' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: 'var(--text-primary)' }}>Google Gemini API Key</label>
+                  <p style={{ color: 'var(--text-secondary)', marginBottom: '16px', fontSize: '14px', lineHeight: '1.5' }}>
+                    Required for the "AI Writer" feature using Gemini. You can get a free key at <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" style={{ color: 'var(--accent-color)' }}>Google AI Studio</a>.
+                  </p>
+                  <input 
+                    type="password"
+                    placeholder="AIzaSy..."
+                    value={geminiKey}
+                    onChange={handleGeminiKeyChange}
+                    style={{
+                      width: '100%',
+                      backgroundColor: 'rgba(0,0,0,0.2)',
+                      border: '1px solid var(--accent-color)',
+                      borderRadius: '8px',
+                      padding: '14px',
+                      fontSize: '15px',
+                      color: 'var(--text-primary)',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          </section>
+        )}
       </main>
     </div>
   );
