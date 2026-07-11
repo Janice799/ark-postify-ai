@@ -1,0 +1,7 @@
+# Ignore GGUF models from deployment uploads
+models/
+node_modules/
+.next/
+out/
+.git/
+.vercel/
