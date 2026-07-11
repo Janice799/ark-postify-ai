@@ -100,6 +100,9 @@ export const ConfigPanel = () => {
   };
 
   const handleDownloadModel = async (repoId, fileName) => {
+    const confirmed = window.confirm("이 모델의 라이선스와 원본 Base Model의 이용 조건을 확인했습니다.");
+    if (!confirmed) return;
+
     setDownloadError(null);
     try {
       const res = await fetch('/api/local/pull', {
@@ -296,9 +299,9 @@ export const ConfigPanel = () => {
                     </button>
                   </form>
 
-                  {/* Only Commercial checkbox */}
+                  {/* License compliance filter checkbox */}
                   <label className="flex items-center justify-between p-4 bg-[rgba(0,0,0,0.2)] border border-[var(--border-color)] rounded-xl cursor-pointer hover:border-[var(--text-secondary)] transition-all">
-                    <span className="text-[14px] font-medium text-[var(--text-primary)]">상업·파인튜닝 가능 모델만 보기</span>
+                    <span className="text-[14px] font-medium text-[var(--text-primary)]">라이선스 메타데이터 기반 모델 필터</span>
                     <input 
                       type="checkbox"
                       checked={onlyCommercial}
@@ -309,8 +312,8 @@ export const ConfigPanel = () => {
 
                   <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed font-sans">
                     {lang === 'en' ? 
-                      "Models with unclear licenses are blocked from downloading. Verify the final conditions on the model card once more." :
-                      "라이센스가 명확하지 않은 모델은 다운로드를 막습니다. 모델 카드에서 최종 조건을 한 번 더 확인하세요."
+                      "Filters based on the license metadata shown on the model card. Please verify the original model card and license terms for final conditions." :
+                      "모델 카드에 표시된 라이선스 메타데이터를 기준으로 필터링합니다. 최종 이용 조건은 원본 모델 카드와 라이선스를 확인해 주세요."
                     }
                   </p>
 
