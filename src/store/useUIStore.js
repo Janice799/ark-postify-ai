@@ -66,18 +66,19 @@ export const useUIStore = create(
 
       probeLocalApi: async () => {
         if (typeof window === 'undefined') return;
+        const targetUrl = get().localApiUrl || 'http://localhost:3000';
         try {
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 1200);
-          const res = await fetch('http://localhost:3000/api/local/pull-status', { signal: controller.signal });
+          const res = await fetch(`${targetUrl.replace(/\/$/, '')}/api/local/pull-status`, { signal: controller.signal });
           clearTimeout(timeoutId);
           if (res.ok) {
-            set({ localApiUrl: 'http://localhost:3000' });
+            set({ isLocalConnected: true });
           } else {
-            set({ localApiUrl: '' });
+            set({ isLocalConnected: false });
           }
         } catch (err) {
-          set({ localApiUrl: '' });
+          set({ isLocalConnected: false });
         }
       },
 
@@ -136,8 +137,11 @@ export const useUIStore = create(
       localModelPath: '',
       setLocalModelPath: (path) => set({ localModelPath: path }),
 
-      localApiUrl: '',
+      localApiUrl: 'http://localhost:3000',
       setLocalApiUrl: (url) => set({ localApiUrl: url }),
+
+      isLocalConnected: false,
+      setIsLocalConnected: (connected) => set({ isLocalConnected: connected }),
 
       hfToken: '',
       setHfToken: (token) => set({ hfToken: token }),

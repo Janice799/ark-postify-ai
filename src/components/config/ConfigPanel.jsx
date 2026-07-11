@@ -1,10 +1,10 @@
 import { useUIStore } from '../../store/useUIStore';
 import { translations } from '../../lib/translations';
 import React, { useState, useEffect } from 'react';
-import { Bot, Key, Shield, Search, Download, CheckCircle2, Loader, Folder, Cpu, AlertTriangle, Trash2, Play, Square } from 'lucide-react';
+import { Bot, Key, Shield, Search, Download, CheckCircle2, Loader, Folder, Cpu, AlertTriangle, Trash2, Play, Square, Globe } from 'lucide-react';
 
 export const ConfigPanel = () => {
-  const { apiKey, setApiKey, geminiKey, setGeminiKey, aiProvider, setAiProvider, lang, localModelPath, setLocalModelPath, hfToken, setHfToken, showToast, localApiUrl, setLocalApiUrl } = useUIStore();
+  const { apiKey, setApiKey, geminiKey, setGeminiKey, aiProvider, setAiProvider, lang, localModelPath, setLocalModelPath, hfToken, setHfToken, showToast, localApiUrl, setLocalApiUrl, isLocalConnected, setIsLocalConnected } = useUIStore();
   const t = translations[lang || 'en'].config;
 
   // HuggingFace & Local Models states
@@ -46,64 +46,36 @@ export const ConfigPanel = () => {
   }, [localModelPath, localApiUrl]);
 
   useEffect(() => {
-    const probeLocalApi = async () => {
+    const probe = async () => {
+      const targetUrl = localApiUrl || 'http://localhost:3000';
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 1200);
-        const res = await fetch('http://localhost:3000/api/local/pull-status', { signal: controller.signal });
+        const res = await fetch(`${targetUrl.replace(/\/$/, '')}/api/local/pull-status`, { signal: controller.signal });
         clearTimeout(timeoutId);
         if (res.ok) {
-          setLocalApiUrl('http://localhost:3000');
+          setIsLocalConnected(true);
           setIsLocalHost(true);
-          console.log('[Postify AI] Connected to local development backend at http://localhost:3000');
           
           try {
-            const specRes = await fetch('http://localhost:3000/api/local/system-specs');
-            if (specRes.ok) {
-              const specData = await specRes.json();
-              setSystemSpecs(specData);
-            }
-          } catch (err) {
-            console.warn('Failed to fetch local specs:', err);
-          }
-        } else {
-          if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            setLocalApiUrl('');
-            setIsLocalHost(true);
-            try {
-              const specRes = await fetch('/api/local/system-specs');
-              if (specRes.ok) {
-                const specData = await specRes.json();
-                setSystemSpecs(specData);
-              }
-            } catch (err) {}
-          } else {
-            setLocalApiUrl('');
-            setIsLocalHost(false);
-          }
-        }
-      } catch (e) {
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-          setLocalApiUrl('');
-          setIsLocalHost(true);
-          try {
-            const specRes = await fetch('/api/local/system-specs');
+            const specRes = await fetch(`${targetUrl.replace(/\/$/, '')}/api/local/system-specs`);
             if (specRes.ok) {
               const specData = await specRes.json();
               setSystemSpecs(specData);
             }
           } catch (err) {}
         } else {
-          setLocalApiUrl('');
+          setIsLocalConnected(false);
           setIsLocalHost(false);
         }
+      } catch (e) {
+        setIsLocalConnected(false);
+        setIsLocalHost(false);
       }
     };
 
-    if (typeof window !== 'undefined') {
-      probeLocalApi();
-    }
-  }, []);
+    probe();
+  }, [localApiUrl, setIsLocalConnected]);
 
   const isCommercialLicense = (license) => {
     const l = license.toLowerCase();
@@ -287,7 +259,38 @@ export const ConfigPanel = () => {
 
           {/* API Key / Local Model Configuration */}
           {aiProvider === 'local' ? (
-            <section className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-2xl p-8 shadow-sm transition-all">
+            <section className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-2xl p-8 shadow-sm transition-all space-y-6">
+              
+              {/* Local API URL Configuration */}
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-full bg-[var(--border-color)] flex items-center justify-center text-[var(--text-primary)]">
+                    <Globe size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-[18px] font-semibold text-[var(--text-primary)]">
+                      Local API Server URL
+                    </h3>
+                    <p className="text-[13px] text-[var(--text-secondary)] mt-1">
+                      {lang === 'en' ? 'The port and URL of your running local background server.' : '로컬 컴퓨터에서 구동 중인 백엔드 서버의 주소입니다.'}
+                    </p>
+                  </div>
+                </div>
+                <input 
+                  type="text"
+                  placeholder="e.g. http://localhost:3000"
+                  value={localApiUrl || ''}
+                  onChange={(e) => setLocalApiUrl(e.target.value)}
+                  className="w-full bg-[rgba(0,0,0,0.3)] border border-[var(--border-color)] rounded-xl p-4 text-[15px] font-mono text-[var(--text-primary)] outline-none focus:border-[var(--text-primary)] transition-all shadow-inner"
+                />
+                <p className="text-[11px] text-[var(--text-secondary)] mt-1.5">
+                  {lang === 'en' ? 'Default: http://localhost:3000. Change this if your local dev server runs on a different port.' : '기본값: http://localhost:3000. 포트가 충돌하여 로컬 서버를 다른 포트에서 실행할 때 주소를 변경해 주세요.'}
+                </p>
+              </div>
+
+              <div className="border-t border-[var(--border-color)]"></div>
+
+              {/* Local GGUF Path Configuration */}
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 rounded-full bg-[var(--border-color)] flex items-center justify-center text-[var(--text-primary)]">
                   <Key size={20} />
