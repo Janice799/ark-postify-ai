@@ -3,15 +3,14 @@ import { SYSTEM_PROMPTS } from './prompts';
 let loadedLlama = null;
 let loadedModel = null;
 let loadedModelPath = null;
-let loadedSession = null;
 
-async function getLocalModelAndSession(modelPath) {
+async function getLocalModel(modelPath) {
   if (loadedModel && loadedModelPath === modelPath) {
-    return loadedSession;
+    return loadedModel;
   }
   
   console.log(`[Local LLM] Loading GGUF model: ${modelPath}`);
-  const { getLlama, LlamaChatSession } = await import('node-llama-cpp');
+  const { getLlama } = await import('node-llama-cpp');
   
   if (!loadedLlama) {
     loadedLlama = await getLlama();
@@ -20,14 +19,9 @@ async function getLocalModelAndSession(modelPath) {
   loadedModel = await loadedLlama.loadModel({
     modelPath: modelPath
   });
-  
-  const context = await loadedModel.createContext();
-  loadedSession = new LlamaChatSession({
-    contextSequence: context.getSequence()
-  });
   loadedModelPath = modelPath;
   
-  return loadedSession;
+  return loadedModel;
 }
 
 const getPersonaInstruction = (persona) => {
@@ -48,7 +42,12 @@ export const runLocalAiPipeline = async (userPrompt, config) => {
   }
 
   console.log(`[Local LLM] Running local inference pipeline for SNS: ${targetSNS}...`);
-  const session = await getLocalModelAndSession(localModelPath);
+  const model = await getLocalModel(localModelPath);
+  const { LlamaChatSession } = await import('node-llama-cpp');
+  const context = await model.createContext();
+  const session = new LlamaChatSession({
+    contextSequence: context.getSequence()
+  });
   
   const formattedPrompt = `You are an elite bilingual social media copywriter.
 Write a highly engaging, natural, and professional social media post in English for ${targetSNS.toUpperCase()} based on the following Korean topic/content.
@@ -83,7 +82,12 @@ export const runLocalCommitCraftPipeline = async (commits, config) => {
   }
 
   console.log(`[Local LLM] Running local inference pipeline for CommitCraft (Repo: ${repoName})...`);
-  const session = await getLocalModelAndSession(localModelPath);
+  const model = await getLocalModel(localModelPath);
+  const { LlamaChatSession } = await import('node-llama-cpp');
+  const context = await model.createContext();
+  const session = new LlamaChatSession({
+    contextSequence: context.getSequence()
+  });
 
   const commitSummary = commits.map(c => `- ${c.message} (${c.hash ? c.hash.substring(0, 7) : 'no hash'})`).join('\n');
   const prompt = `Repository: ${repoName || 'unnamed-repo'}\n\nCommits:\n${commitSummary}\n\n`;
