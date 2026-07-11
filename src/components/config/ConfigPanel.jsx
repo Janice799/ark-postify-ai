@@ -1,7 +1,7 @@
 import { useUIStore } from '../../store/useUIStore';
 import { translations } from '../../lib/translations';
 import React, { useState, useEffect } from 'react';
-import { Bot, Key, Shield, Search, Download, CheckCircle2, Loader, Folder, Cpu } from 'lucide-react';
+import { Bot, Key, Shield, Search, Download, CheckCircle2, Loader, Folder, Cpu, AlertTriangle } from 'lucide-react';
 
 export const ConfigPanel = () => {
   const { apiKey, setApiKey, geminiKey, setGeminiKey, aiProvider, setAiProvider, lang, localModelPath, setLocalModelPath, hfToken, setHfToken } = useUIStore();
@@ -17,6 +17,14 @@ export const ConfigPanel = () => {
   const [installedModels, setInstalledModels] = useState([]);
   const [downloadingModels, setDownloadingModels] = useState([]);
   const [onlyCommercial, setOnlyCommercial] = useState(true);
+  const [isLocalHost, setIsLocalHost] = useState(true);
+  const [downloadError, setDownloadError] = useState(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setIsLocalHost(window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    }
+  }, []);
 
   const isCommercialLicense = (license) => {
     const l = license.toLowerCase();
@@ -60,6 +68,7 @@ export const ConfigPanel = () => {
     setSearchingHf(true);
     setSelectedRepo(null);
     setRepoFiles([]);
+    setDownloadError(null);
     try {
       const res = await fetch(`/api/local/hf-search?query=${encodeURIComponent(hfSearchQuery)}&token=${encodeURIComponent(hfToken || '')}`);
       if (res.ok) {
@@ -76,6 +85,7 @@ export const ConfigPanel = () => {
   const handleSelectRepo = async (repoId) => {
     setSelectedRepo(repoId);
     setLoadingFiles(true);
+    setDownloadError(null);
     try {
       const res = await fetch(`/api/local/hf-files?repoId=${encodeURIComponent(repoId)}&token=${encodeURIComponent(hfToken || '')}`);
       if (res.ok) {
@@ -90,6 +100,7 @@ export const ConfigPanel = () => {
   };
 
   const handleDownloadModel = async (repoId, fileName) => {
+    setDownloadError(null);
     try {
       const res = await fetch('/api/local/pull', {
         method: 'POST',
@@ -98,9 +109,12 @@ export const ConfigPanel = () => {
       });
       if (res.ok) {
         fetchLocalModelsStatus();
+      } else {
+        const data = await res.json();
+        setDownloadError(data.error || 'Failed to start download');
       }
     } catch (err) {
-      console.error(err);
+      setDownloadError(err.message || 'Failed to start download');
     }
   };
 
@@ -233,6 +247,28 @@ export const ConfigPanel = () => {
                     HUGGINGFACE GGUF SEARCH
                   </div>
 
+                  {!isLocalHost && (
+                    <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 flex gap-3 text-red-400">
+                      <AlertTriangle className="flex-shrink-0 mt-0.5" size={18} />
+                      <div className="text-[13px] leading-relaxed">
+                        <strong>로컬 개발 환경(localhost) 구동이 필요합니다.</strong>
+                        <p className="mt-1 opacity-90 text-[12px]">
+                          GGUF 모델 다운로드 및 구동 기능은 로컬 PC에서 <strong>npm run dev (localhost:3000)</strong>를 실행하여 접속할 때만 작동합니다. Vercel 클라우드 배포판에서는 서버 용량 및 쓰기 불가능한 파일시스템 환경으로 인해 다운로드가 제한됩니다.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {downloadError && (
+                    <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 flex gap-3 text-red-400">
+                      <AlertTriangle className="flex-shrink-0 mt-0.5" size={18} />
+                      <div className="text-[13px] leading-relaxed">
+                        <strong>다운로드 오류:</strong>
+                        <p className="mt-1 opacity-90 text-[12px] font-mono">{downloadError}</p>
+                      </div>
+                    </div>
+                  )}
+
                   {/* HF Token (optional) */}
                   <input 
                     type="password"
@@ -334,7 +370,7 @@ export const ConfigPanel = () => {
                             const isDownloading = downloadingModels.some(m => m.name === file);
                             const repoInfo = hfModels.find(m => m.id === selectedRepo);
                             const isCommercial = repoInfo ? isCommercialLicense(repoInfo.license) : true;
-                            const isDownloadDisabled = !isCommercial;
+                            const isDownloadDisabled = !isCommercial || !isLocalHost;
                             
                             return (
                               <div key={file} className="flex items-center justify-between p-2.5 bg-black/10 border border-[var(--border-color)] rounded-lg">
@@ -354,7 +390,7 @@ export const ConfigPanel = () => {
                                   </span>
                                 ) : isDownloadDisabled ? (
                                   <span className="text-[10px] font-semibold text-red-400/80 bg-red-950/30 border border-red-500/20 px-2 py-0.5 rounded">
-                                    다운로드 제한
+                                    {!isLocalHost ? '로컬 한정' : '다운로드 제한'}
                                   </span>
                                 ) : (
                                   <button
