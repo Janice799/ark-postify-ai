@@ -36,6 +36,7 @@ export const CommitCraftPanel = () => {
     geminiKey,
     apiKey,
     aiProvider,
+    localModelPath,
     persona
   } = useUIStore();
 
@@ -106,7 +107,7 @@ export const CommitCraftPanel = () => {
         body: JSON.stringify({
           botToken: commitCraftTelegramBotToken,
           chatId: commitCraftTelegramChatId,
-          message: '📬 <b>CommitCraft Test Notification</b>\n\nConnection established successfully! Ready to post devlogs.'
+          message: '📬 <b>CommitCraft Devlog Test Notification</b>\n\nConnection established successfully! Ready to post devlogs.'
         })
       });
       const data = await res.json();
@@ -175,6 +176,7 @@ export const CommitCraftPanel = () => {
           provider: aiProvider,
           apiKey: apiKey,
           geminiKey: geminiKey,
+          localModelPath: localModelPath,
           persona: persona
         })
       });

@@ -16,6 +16,10 @@ const parseErrorResponse = async (response) => {
 };
 
 const resolveProviderConfig = ({ aiProvider, apiKey, geminiKey }) => {
+  if (aiProvider === 'local') {
+    return { provider: 'local', apiKey, geminiKey };
+  }
+
   const hasOpenAI = Boolean(apiKey?.trim());
   const hasGemini = Boolean(geminiKey?.trim());
 
@@ -41,7 +45,7 @@ const resolveProviderConfig = ({ aiProvider, apiKey, geminiKey }) => {
 
 const runGenerationRequest = async ({ action = 'generate', errorLabel }) => {
   const { koreanText, persona, setIsTranslating, clearEnglishText, setEnglishText } = useEditorStore.getState();
-  const { apiKey, geminiKey, aiProvider } = useUIStore.getState();
+  const { apiKey, geminiKey, aiProvider, localModelPath } = useUIStore.getState();
 
   if (!koreanText) return;
 
@@ -62,6 +66,7 @@ const runGenerationRequest = async ({ action = 'generate', errorLabel }) => {
         targetSNS: useEditorStore.getState().targetSNS,
         apiKey: resolved.apiKey,
         geminiKey: resolved.geminiKey,
+        localModelPath,
         persona,
         action
       })

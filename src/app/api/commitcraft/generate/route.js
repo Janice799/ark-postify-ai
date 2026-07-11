@@ -1,7 +1,5 @@
 import { runCommitCraftPipeline } from '../../../../engines/ai/pipeline';
 
-export const runtime = 'edge';
-
 const jsonError = (message, status = 400, code = 'BAD_REQUEST') => (
   Response.json({ error: { code, message } }, { status })
 );
@@ -20,13 +18,20 @@ export async function POST(req) {
     const provider = body.provider || 'openai';
     const apiKey = typeof body.apiKey === 'string' ? body.apiKey.trim() : '';
     const geminiKey = typeof body.geminiKey === 'string' ? body.geminiKey.trim() : '';
+    const localModelPath = typeof body.localModelPath === 'string' ? body.localModelPath.trim() : '';
     const persona = typeof body.persona === 'string' ? body.persona.trim() : '';
 
     if (!Array.isArray(commits) || commits.length === 0) {
       return jsonError('A non-empty commits array is required.', 400, 'MISSING_COMMITS');
     }
 
-    const result = await runCommitCraftPipeline(commits, { provider, repoName, apiKey, geminiKey, persona });
+    let result;
+    if (provider === 'local') {
+      const { runLocalCommitCraftPipeline } = await import('../../../../engines/ai/localPipeline');
+      result = await runLocalCommitCraftPipeline(commits, { provider, repoName, apiKey, geminiKey, persona, localModelPath });
+    } else {
+      result = await runCommitCraftPipeline(commits, { provider, repoName, apiKey, geminiKey, persona, localModelPath });
+    }
 
     // Split result by divider line
     const parts = result.split('---');

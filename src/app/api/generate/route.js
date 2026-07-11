@@ -1,9 +1,7 @@
 import { runAiPipeline, runTranslationPipeline } from '../../../engines/ai/pipeline';
 
-export const runtime = 'edge';
-
 const ALLOWED_ACTIONS = new Set(['generate', 'translate']);
-const ALLOWED_PROVIDERS = new Set(['openai', 'gemini']);
+const ALLOWED_PROVIDERS = new Set(['openai', 'gemini', 'local']);
 const ALLOWED_TARGETS = new Set(['x', 'linkedin', 'instagram']);
 
 const jsonError = (message, status = 400, code = 'BAD_REQUEST') => (
@@ -25,6 +23,7 @@ export async function POST(req) {
     const targetSNS = body.targetSNS || 'x';
     const apiKey = typeof body.apiKey === 'string' ? body.apiKey.trim() : '';
     const geminiKey = typeof body.geminiKey === 'string' ? body.geminiKey.trim() : '';
+    const localModelPath = typeof body.localModelPath === 'string' ? body.localModelPath.trim() : '';
     const persona = typeof body.persona === 'string' ? body.persona.trim() : '';
     const action = body.action || 'generate';
 
@@ -45,10 +44,14 @@ export async function POST(req) {
     }
 
     if (action === 'translate') {
-      const result = await runTranslationPipeline(prompt, { provider, targetSNS, apiKey, geminiKey, persona });
+      const result = await runTranslationPipeline(prompt, { provider, targetSNS, apiKey, geminiKey, persona, localModelPath });
+      return Response.json({ text: result });
+    } else if (provider === 'local') {
+      const { runLocalAiPipeline } = await import('../../../engines/ai/localPipeline');
+      const result = await runLocalAiPipeline(prompt, { provider, targetSNS, apiKey, geminiKey, persona, localModelPath });
       return Response.json({ text: result });
     } else {
-      const result = await runAiPipeline(prompt, { provider, targetSNS, apiKey, geminiKey, persona });
+      const result = await runAiPipeline(prompt, { provider, targetSNS, apiKey, geminiKey, persona, localModelPath });
       return Response.json({ text: result });
     }
   } catch (error) {

@@ -83,6 +83,9 @@ export const useUIStore = create(
       geminiKey: '',
       setGeminiKey: (key) => set({ geminiKey: key }),
 
+      localModelPath: '',
+      setLocalModelPath: (path) => set({ localModelPath: path }),
+
       // CommitCraft Settings
       commitCraftRepos: [],
       setCommitCraftRepos: (repos) => set({ commitCraftRepos: repos }),
