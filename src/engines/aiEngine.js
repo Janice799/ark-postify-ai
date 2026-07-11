@@ -55,6 +55,23 @@ const runGenerationRequest = async ({ action = 'generate', errorLabel }) => {
   try {
     const resolved = resolveProviderConfig({ aiProvider, apiKey, geminiKey });
 
+    if (resolved.provider === 'local') {
+      if (!localModelPath) {
+        throw new Error('로컬 GGUF 모델 파일 경로가 설정되어 있지 않습니다. CONFIG 메뉴에서 활성 모델을 선택하거나 로드해 주세요.');
+      }
+      try {
+        const existsRes = await fetch(`/api/local/exists?path=${encodeURIComponent(localModelPath)}`);
+        if (existsRes.ok) {
+          const existsData = await existsRes.json();
+          if (!existsData.exists) {
+            throw new Error(`지정된 경로에 로컬 모델 파일이 없습니다: ${localModelPath}. CONFIG 메뉴에서 경로를 검증해 주세요.`);
+          }
+        }
+      } catch (err) {
+        // Fallback to native fetch checks if api fails
+      }
+    }
+
     const response = await fetch('/api/generate', {
       method: 'POST',
       headers: {

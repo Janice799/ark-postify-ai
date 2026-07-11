@@ -21,6 +21,30 @@ export const ConfigPanel = () => {
   const [localApiUrl, setLocalApiUrl] = useState('');
   const [downloadError, setDownloadError] = useState(null);
   const [systemSpecs, setSystemSpecs] = useState(null);
+  const [pathExists, setPathExists] = useState(true);
+
+  useEffect(() => {
+    const verifyPath = async () => {
+      if (!localModelPath) {
+        setPathExists(true);
+        return;
+      }
+      try {
+        const res = await fetch(`${localApiUrl}/api/local/exists?path=${encodeURIComponent(localModelPath)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setPathExists(data.exists);
+        } else {
+          setPathExists(false);
+        }
+      } catch (err) {
+        setPathExists(false);
+      }
+    };
+
+    const timeout = setTimeout(verifyPath, 500);
+    return () => clearTimeout(timeout);
+  }, [localModelPath, localApiUrl]);
 
   useEffect(() => {
     const probeLocalApi = async () => {
@@ -285,8 +309,14 @@ export const ConfigPanel = () => {
                   placeholder="e.g. /Users/username/models/gemma-4-coding-q8.gguf"
                   value={localModelPath || ''}
                   onChange={(e) => setLocalModelPath(e.target.value)}
-                  className="w-full bg-[rgba(0,0,0,0.3)] border border-[var(--border-color)] rounded-xl p-4 text-[15px] font-mono text-[var(--text-primary)] outline-none focus:border-[var(--text-primary)] transition-all shadow-inner"
+                  className={`w-full bg-[rgba(0,0,0,0.3)] border rounded-xl p-4 text-[15px] font-mono text-[var(--text-primary)] outline-none focus:border-[var(--text-primary)] transition-all shadow-inner ${!pathExists ? 'border-red-500/50 focus:border-red-500' : 'border-[var(--border-color)]'}`}
                 />
+                {!pathExists && (
+                  <p className="text-[12px] text-red-400 font-medium flex items-center gap-1.5 mt-1">
+                    <AlertTriangle size={12} className="flex-shrink-0" />
+                    {lang === 'en' ? 'Model file does not exist at this path.' : '해당 경로에 모델 파일이 존재하지 않습니다.'}
+                  </p>
+                )}
                 
                 {/* Installed Local Models list */}
                 {installedModels.length > 0 && (
