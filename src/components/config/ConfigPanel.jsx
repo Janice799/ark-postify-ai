@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Bot, Key, Shield, Search, Download, CheckCircle2, Loader, Folder, Cpu } from 'lucide-react';
 
 export const ConfigPanel = () => {
-  const { apiKey, setApiKey, geminiKey, setGeminiKey, aiProvider, setAiProvider, lang, localModelPath, setLocalModelPath } = useUIStore();
+  const { apiKey, setApiKey, geminiKey, setGeminiKey, aiProvider, setAiProvider, lang, localModelPath, setLocalModelPath, hfToken, setHfToken } = useUIStore();
   const t = translations[lang || 'en'].config;
 
   // HuggingFace & Local Models states
@@ -16,6 +16,20 @@ export const ConfigPanel = () => {
   const [loadingFiles, setLoadingFiles] = useState(false);
   const [installedModels, setInstalledModels] = useState([]);
   const [downloadingModels, setDownloadingModels] = useState([]);
+  const [onlyCommercial, setOnlyCommercial] = useState(true);
+
+  const isCommercialLicense = (license) => {
+    const l = license.toLowerCase();
+    if (l === 'unknown') return false;
+    return l.includes('apache') || 
+           l.includes('mit') || 
+           l.includes('bsd') || 
+           l.includes('gemma') || 
+           l.includes('llama') || 
+           l.includes('openrail') || 
+           l.includes('cc-by-4.0') || 
+           l.includes('cc-by-sa-4.0');
+  };
 
   // Fetch installed and downloading models status
   const fetchLocalModelsStatus = async () => {
@@ -41,13 +55,13 @@ export const ConfigPanel = () => {
   }, []);
 
   const handleSearchHf = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!hfSearchQuery.trim()) return;
     setSearchingHf(true);
     setSelectedRepo(null);
     setRepoFiles([]);
     try {
-      const res = await fetch(`/api/local/hf-search?query=${encodeURIComponent(hfSearchQuery)}`);
+      const res = await fetch(`/api/local/hf-search?query=${encodeURIComponent(hfSearchQuery)}&token=${encodeURIComponent(hfToken || '')}`);
       if (res.ok) {
         const data = await res.json();
         setHfModels(data.models || []);
@@ -63,7 +77,7 @@ export const ConfigPanel = () => {
     setSelectedRepo(repoId);
     setLoadingFiles(true);
     try {
-      const res = await fetch(`/api/local/hf-files?repoId=${encodeURIComponent(repoId)}`);
+      const res = await fetch(`/api/local/hf-files?repoId=${encodeURIComponent(repoId)}&token=${encodeURIComponent(hfToken || '')}`);
       if (res.ok) {
         const data = await res.json();
         setRepoFiles(data.files || []);
@@ -214,47 +228,87 @@ export const ConfigPanel = () => {
 
                 {/* HuggingFace GGUF Search */}
                 <div className="border border-[var(--border-color)] rounded-xl p-6 bg-black/20 flex flex-col gap-4">
-                  <div className="flex items-center gap-2 font-semibold text-[var(--text-primary)]">
-                    <Cpu size={18} className="text-[var(--accent-color)]" />
-                    <span>{lang === 'en' ? 'HuggingFace GGUF Search & Download' : '허깅페이스 GGUF 모델 검색 및 다운로드'}</span>
+                  <div className="text-[12px] font-bold text-[rgba(168,85,247,1)] uppercase tracking-wider mb-1 flex items-center gap-1.5 font-sans">
+                    <Cpu size={14} />
+                    HUGGINGFACE GGUF SEARCH
                   </div>
+
+                  {/* HF Token (optional) */}
+                  <input 
+                    type="password"
+                    placeholder={lang === 'en' ? 'HF Token (optional - for private models)' : 'HF Token (선택 사항 - 비공개 모델 용)'}
+                    value={hfToken || ''}
+                    onChange={(e) => setHfToken(e.target.value)}
+                    className="w-full bg-[rgba(0,0,0,0.3)] border border-[var(--border-color)] rounded-xl p-4 text-[15px] font-sans text-[var(--text-primary)] outline-none focus:border-[var(--text-primary)] transition-all shadow-inner"
+                  />
                   
+                  {/* Search models input + button */}
                   <form onSubmit={handleSearchHf} className="flex gap-2">
                     <input 
                       type="text"
-                      placeholder={lang === 'en' ? 'Search models (e.g. gemma, qwen2)...' : '모델 검색 (예: gemma, qwen2)...'}
+                      placeholder="Search models (e.g. qwen, llama)"
                       value={hfSearchQuery}
                       onChange={(e) => setHfSearchQuery(e.target.value)}
-                      className="flex-1 bg-[rgba(0,0,0,0.3)] border border-[var(--border-color)] rounded-xl p-3 text-[14px] text-[var(--text-primary)] outline-none focus:border-[var(--text-primary)] transition-all"
+                      className="flex-1 bg-[rgba(0,0,0,0.3)] border border-[var(--border-color)] rounded-xl p-4 text-[15px] font-sans text-[var(--text-primary)] outline-none focus:border-[var(--text-primary)] transition-all shadow-inner"
                     />
                     <button
                       type="submit"
                       disabled={searchingHf}
-                      className="px-5 bg-[var(--text-primary)] text-[var(--bg-color)] rounded-xl text-[14px] font-semibold flex items-center gap-1.5 hover:opacity-90 disabled:opacity-50 transition-opacity"
+                      className="w-[56px] h-[56px] bg-[rgba(168,85,247,0.2)] hover:bg-[rgba(168,85,247,0.3)] text-[rgba(168,85,247,1)] border border-[rgba(168,85,247,0.4)] rounded-xl flex items-center justify-center disabled:opacity-50 transition-all"
                     >
-                      {searchingHf ? <Loader className="animate-spin" size={14} /> : <Search size={14} />}
-                      {lang === 'en' ? 'Search' : '검색'}
+                      {searchingHf ? <Loader className="animate-spin" size={20} /> : <Search size={20} />}
                     </button>
                   </form>
 
+                  {/* Only Commercial checkbox */}
+                  <label className="flex items-center justify-between p-4 bg-[rgba(0,0,0,0.2)] border border-[var(--border-color)] rounded-xl cursor-pointer hover:border-[var(--text-secondary)] transition-all">
+                    <span className="text-[14px] font-medium text-[var(--text-primary)]">상업·파인튜닝 가능 모델만 보기</span>
+                    <input 
+                      type="checkbox"
+                      checked={onlyCommercial}
+                      onChange={(e) => setOnlyCommercial(e.target.checked)}
+                      className="w-5 h-5 rounded border-[var(--border-color)] text-[rgba(168,85,247,1)] focus:ring-[rgba(168,85,247,1)] cursor-pointer"
+                    />
+                  </label>
+
+                  <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed font-sans">
+                    {lang === 'en' ? 
+                      "Models with unclear licenses are blocked from downloading. Verify the final conditions on the model card once more." :
+                      "라이센스가 명확하지 않은 모델은 다운로드를 막습니다. 모델 카드에서 최종 조건을 한 번 더 확인하세요."
+                    }
+                  </p>
+
                   {/* Hugging Face Model Results */}
                   {hfModels.length > 0 && (
-                    <div className="flex flex-col gap-2 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
-                      {hfModels.map(m => (
-                        <button
-                          key={m.id}
-                          type="button"
-                          onClick={() => handleSelectRepo(m.id)}
-                          className={`flex items-center justify-between p-3 rounded-lg border text-left transition-all ${selectedRepo === m.id ? 'border-[var(--accent-color)] bg-[rgba(255,255,255,0.03)]' : 'border-[var(--border-color)] hover:border-[var(--text-secondary)] bg-transparent'}`}
-                        >
-                          <div className="min-w-0 flex-1">
-                            <p className="text-[13px] text-[var(--text-primary)] font-semibold truncate">{m.id}</p>
-                            <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">
-                              {m.downloads.toLocaleString()} DLs • {m.likes.toLocaleString()} Likes
-                            </p>
-                          </div>
-                        </button>
-                      ))}
+                    <div className="flex flex-col gap-2 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar border-t border-[var(--border-color)] pt-3 mt-1">
+                      {hfModels
+                        .filter(m => {
+                          if (onlyCommercial) {
+                            return isCommercialLicense(m.license);
+                          }
+                          return true;
+                        })
+                        .map(m => {
+                          const isCommercial = isCommercialLicense(m.license);
+                          return (
+                            <button
+                              key={m.id}
+                              type="button"
+                              onClick={() => handleSelectRepo(m.id)}
+                              className={`flex items-center justify-between p-3 rounded-lg border text-left transition-all ${selectedRepo === m.id ? 'border-[rgba(168,85,247,1)] bg-[rgba(255,255,255,0.03)]' : 'border-[var(--border-color)] hover:border-[var(--text-secondary)] bg-transparent'}`}
+                            >
+                              <div className="min-w-0 flex-1 mr-2">
+                                <p className="text-[13px] text-[var(--text-primary)] font-semibold truncate font-mono">{m.id}</p>
+                                <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">
+                                  {m.downloads.toLocaleString()} DLs • License: {m.license}
+                                </p>
+                              </div>
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold flex-shrink-0 ${isCommercial ? 'border border-green-500/30 text-green-400 bg-green-500/10' : 'border border-red-500/30 text-red-400 bg-red-500/10'}`}>
+                                {isCommercial ? '상업·파인튜닝 가능' : '상업 이용 제한'}
+                              </span>
+                            </button>
+                          );
+                        })}
                     </div>
                   )}
 
@@ -278,6 +332,9 @@ export const ConfigPanel = () => {
                           {repoFiles.map(file => {
                             const isDownloaded = installedModels.some(m => m.name === file);
                             const isDownloading = downloadingModels.some(m => m.name === file);
+                            const repoInfo = hfModels.find(m => m.id === selectedRepo);
+                            const isCommercial = repoInfo ? isCommercialLicense(repoInfo.license) : true;
+                            const isDownloadDisabled = !isCommercial;
                             
                             return (
                               <div key={file} className="flex items-center justify-between p-2.5 bg-black/10 border border-[var(--border-color)] rounded-lg">
@@ -294,6 +351,10 @@ export const ConfigPanel = () => {
                                   <span className="text-[11px] font-bold text-yellow-500 flex items-center gap-1">
                                     <Loader className="animate-spin" size={12} />
                                     Downloading
+                                  </span>
+                                ) : isDownloadDisabled ? (
+                                  <span className="text-[10px] font-semibold text-red-400/80 bg-red-950/30 border border-red-500/20 px-2 py-0.5 rounded">
+                                    다운로드 제한
                                   </span>
                                 ) : (
                                   <button

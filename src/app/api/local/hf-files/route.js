@@ -1,6 +1,7 @@
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const repoId = searchParams.get('repoId') || '';
+  const token = searchParams.get('token') || '';
   
   if (!repoId) {
     return Response.json({ error: 'repoId is required' }, { status: 400 });
@@ -8,7 +9,11 @@ export async function GET(req) {
 
   try {
     const url = `https://huggingface.co/api/models/${repoId}`;
-    const response = await fetch(url);
+    const headers = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token.trim()}`;
+    }
+    const response = await fetch(url, { headers });
     if (!response.ok) {
       throw new Error(`HF API error: ${response.status}`);
     }

@@ -86,6 +86,9 @@ export const useUIStore = create(
       localModelPath: '',
       setLocalModelPath: (path) => set({ localModelPath: path }),
 
+      hfToken: '',
+      setHfToken: (token) => set({ hfToken: token }),
+
       // CommitCraft Settings
       commitCraftRepos: [],
       setCommitCraftRepos: (repos) => set({ commitCraftRepos: repos }),
