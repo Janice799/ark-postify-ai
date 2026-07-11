@@ -50,18 +50,22 @@ export const runLocalAiPipeline = async (userPrompt, config) => {
   console.log(`[Local LLM] Running local inference pipeline for SNS: ${targetSNS}...`);
   const session = await getLocalModelAndSession(localModelPath);
   
-  const composerPrompt = SYSTEM_PROMPTS.getComposerPrompt(
-    targetSNS,
-    persona ? `Persona / Brand Voice:\n${persona}\n` : ''
-  );
-  
-  const formattedPrompt = `You are a world-class, top-tier bilingual social media copywriter.
-${composerPrompt}
+  const formattedPrompt = `You are an elite bilingual social media copywriter.
+Write a highly engaging, natural, and professional social media post in English for ${targetSNS.toUpperCase()} based on the following Korean topic/content.
 
-${personaInstruction}Original Korean Content:
+Rules:
+- Output ONLY the final post text. Do NOT include any introductory phrases, explanations, analysis, metadata, or titles.
+- Start with a strong hook to grab attention.
+- Keep it punchy, engaging, and value-packed.
+${targetSNS === 'x' ? '- Must be strictly under 280 characters. Do NOT use hashtags (#).' : ''}
+${targetSNS === 'linkedin' ? '- Use professional formatting and relevant hashtags at the bottom.' : ''}
+${targetSNS === 'instagram' ? '- Use appropriate emojis and hashtags at the bottom.' : ''}
+${personaInstruction ? `- Style constraint: ${personaInstruction}` : ''}
+
+Original Korean Content:
 "${userPrompt}"
 
-Write the final post in English. Output ONLY the post body text. Do NOT include any introductory sentences, explanations, analysis, or headings:`;
+Final English Post:`;
   const responseText = await session.prompt(formattedPrompt);
   return responseText;
 };
