@@ -327,6 +327,13 @@ export const renderCardToCanvas = async () => {
   if (fontSize === 'large') fontSizeInPx = is169 ? 120 : 135;
   if (fontSize === 'xlarge') fontSizeInPx = is169 ? 150 : 180;
   
+  // Heuristic length-based scale to prevent clipping of long paragraphs
+  const textLength = englishText?.length || 0;
+  if (textLength > 100) {
+    const lengthScale = Math.max(0.52, 1 - (textLength - 100) * 0.0038);
+    fontSizeInPx = fontSizeInPx * lengthScale;
+  }
+  
   let dynamicLineHeight = 1.5;
   if (lineHeight === 'tight') dynamicLineHeight = 1.2;
   if (lineHeight === 'relaxed') dynamicLineHeight = 1.8;

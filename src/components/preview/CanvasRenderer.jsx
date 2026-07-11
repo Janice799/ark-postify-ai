@@ -46,7 +46,14 @@ export const CanvasRenderer = forwardRef((props, ref) => {
   if (fontSize === 'small') cqwSize = is169 ? 5.83 : 6.67;
   if (fontSize === 'large') cqwSize = is169 ? 10.0 : 11.25;
   if (fontSize === 'xlarge') cqwSize = is169 ? 12.5 : 15.0;
-  const dynamicFontSize = `${cqwSize}cqw`;
+
+  // Heuristic length-based scale to prevent clipping of long paragraphs
+  const textLength = englishText?.length || 0;
+  let lengthScale = 1.0;
+  if (textLength > 100) {
+    lengthScale = Math.max(0.52, 1 - (textLength - 100) * 0.0038);
+  }
+  const dynamicFontSize = `calc(${cqwSize}cqw * ${lengthScale})`;
 
   // Calculate dynamic line height
   let dynamicLineHeight = 1.5;
