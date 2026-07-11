@@ -31,8 +31,8 @@ export const Sidebar = () => {
   
   return (
     <nav className="w-[88px] h-full bg-[var(--bg-panel)] border-r border-[var(--border-color)] flex flex-col items-center py-6 flex-shrink-0 z-20">
-      <div className="mb-10 w-14 h-14 flex items-center justify-center bg-[var(--text-primary)] text-[var(--bg-color)] rounded-[18px] shadow-lg">
-        <MessageSquare size={28} strokeWidth={2.5} />
+      <div className="mb-10 w-14 h-14 flex items-center justify-center rounded-[18px] shadow-lg overflow-hidden border border-white/10 bg-black">
+        <img src="/icon.png" alt="Postify AI Logo" className="w-full h-full object-cover" />
       </div>
       
       <div className="w-full flex flex-col gap-2">
