@@ -1,10 +1,10 @@
 import { useUIStore } from '../../store/useUIStore';
 import { translations } from '../../lib/translations';
 import React, { useState, useEffect } from 'react';
-import { Bot, Key, Shield, Search, Download, CheckCircle2, Loader, Folder, Cpu, AlertTriangle } from 'lucide-react';
+import { Bot, Key, Shield, Search, Download, CheckCircle2, Loader, Folder, Cpu, AlertTriangle, Trash2, Play, Square } from 'lucide-react';
 
 export const ConfigPanel = () => {
-  const { apiKey, setApiKey, geminiKey, setGeminiKey, aiProvider, setAiProvider, lang, localModelPath, setLocalModelPath, hfToken, setHfToken } = useUIStore();
+  const { apiKey, setApiKey, geminiKey, setGeminiKey, aiProvider, setAiProvider, lang, localModelPath, setLocalModelPath, hfToken, setHfToken, showToast } = useUIStore();
   const t = translations[lang || 'en'].config;
 
   // HuggingFace & Local Models states
@@ -188,6 +188,30 @@ export const ConfigPanel = () => {
       setDownloadError(err.message || 'Failed to start download');
     }
   };
+  const handleDeleteModel = async (fileName) => {
+    const confirmed = window.confirm(lang === 'en' ? `Are you sure you want to permanently delete ${fileName}?` : `${fileName} 모델 파일을 정말 삭제하시겠습니까?`);
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch(`${localApiUrl}/api/local/delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileName })
+      });
+      if (res.ok) {
+        if (localModelPath.endsWith(fileName)) {
+          setLocalModelPath('');
+        }
+        fetchLocalModelsStatus();
+        showToast(lang === 'en' ? 'Model deleted successfully' : '모델이 성공적으로 삭제되었습니다.', 'success');
+      } else {
+        const data = await res.json();
+        showToast(data.error || 'Failed to delete model', 'error');
+      }
+    } catch (err) {
+      showToast(err.message || 'Failed to delete model', 'error');
+    }
+  };
 
   return (
     <div className="flex-1 bg-[var(--bg-panel)] overflow-y-auto p-12 custom-scrollbar w-full h-full flex flex-col">
@@ -272,20 +296,63 @@ export const ConfigPanel = () => {
                       {lang === 'en' ? 'Downloaded GGUF Models' : '다운로드된 GGUF 모델'}
                     </div>
                     <div className="flex flex-col gap-2">
-                      {installedModels.map(m => (
-                        <button
-                          key={m.name}
-                          type="button"
-                          onClick={() => setLocalModelPath(m.path)}
-                          className={`flex items-center justify-between p-3 rounded-lg border text-left transition-all ${localModelPath === m.path ? 'border-[var(--text-primary)] bg-[rgba(255,255,255,0.05)]' : 'border-[var(--border-color)] hover:border-[var(--text-secondary)] bg-transparent'}`}
-                        >
-                          <div className="min-w-0 flex-1">
-                            <p className="text-[13px] font-mono text-[var(--text-primary)] truncate">{m.name}</p>
-                            <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">{m.sizeGb} GB • Click to select</p>
+                      {installedModels.map(m => {
+                        const isActive = localModelPath === m.path;
+                        const estMemGB = estimateModelMemoryGB(m.name);
+                        const isOverBudget = systemSpecs && estMemGB > systemSpecs.safeModelBudgetGB;
+
+                        return (
+                          <div
+                            key={m.name}
+                            className={`flex items-center justify-between p-3.5 rounded-lg border bg-black/10 transition-all ${isActive ? 'border-[var(--text-primary)]' : 'border-[var(--border-color)]'}`}
+                          >
+                            <div className="min-w-0 flex-1 mr-4">
+                              <p className="text-[13px] font-mono text-[var(--text-primary)] font-semibold truncate" title={m.name}>{m.name}</p>
+                              <p className={`text-[11px] mt-1 ${isOverBudget ? 'text-rose-400 font-semibold' : 'text-[var(--text-secondary)]'}`}>
+                                {m.sizeGb} GB • 요구 메모리(예상): {estMemGB.toFixed(1)} GB RAM {isOverBudget && ' ⚠️ 메모리 초과 경고'}
+                              </p>
+                            </div>
+                            
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              {isActive ? (
+                                <>
+                                  <span className="text-[11px] font-bold text-green-400 flex items-center gap-1 bg-green-500/10 border border-green-500/20 px-2 py-0.5 rounded">
+                                    <CheckCircle2 size={12} />
+                                    Active
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => setLocalModelPath('')}
+                                    className="px-2.5 py-1 border border-white/10 hover:border-white rounded text-[11px] text-[var(--text-secondary)] hover:text-white font-medium flex items-center gap-1 bg-transparent transition-all"
+                                  >
+                                    <Square size={10} />
+                                    Release
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => setLocalModelPath(m.path)}
+                                    className={`px-2.5 py-1 border rounded text-[11px] font-medium flex items-center gap-1 bg-transparent transition-all ${isOverBudget ? 'border-rose-500/30 text-rose-400 hover:bg-rose-500/10 hover:border-rose-400' : 'border-[var(--border-color)] hover:border-[var(--text-primary)] hover:bg-white/5 text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+                                  >
+                                    <Play size={10} />
+                                    Load
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteModel(m.name)}
+                                    className="px-2.5 py-1 border border-red-500/30 hover:border-red-500 rounded text-[11px] text-red-400 hover:text-red-300 font-medium flex items-center gap-1 bg-transparent transition-all"
+                                  >
+                                    <Trash2 size={10} />
+                                    Delete
+                                  </button>
+                                </>
+                              )}
+                            </div>
                           </div>
-                          {localModelPath === m.path && <CheckCircle2 size={16} className="text-green-400 flex-shrink-0" />}
-                        </button>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}

@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { supabase } from '../lib/supabaseClient';
 
-// Custom storage that strips customBgImage before saving (too large for localStorage)
+// Custom storage that strips customBgImage and user before saving
 const safeStorage = {
   getItem: (name) => {
     const str = localStorage.getItem(name);
@@ -11,7 +12,7 @@ const safeStorage = {
   setItem: (name, value) => {
     const toSave = { ...value };
     if (toSave.state) {
-      const { customBgImage, toast, draftsUnlocked, ...safeState } = toSave.state;
+      const { customBgImage, toast, draftsUnlocked, user, ...safeState } = toSave.state;
       toSave.state = safeState;
     }
     try {
@@ -30,6 +31,38 @@ export const useUIStore = create(
     (set, get) => ({
       activeTab: 'home',
       setActiveTab: (tab) => set({ activeTab: tab }),
+
+      // Auth states
+      user: null,
+      setUser: (user) => set({ user }),
+      
+      initializeAuth: () => {
+        if (!supabase) {
+          if (typeof window !== 'undefined') {
+            const mockUserStr = localStorage.getItem('mock_user');
+            if (mockUserStr) {
+              try {
+                set({ user: JSON.parse(mockUserStr) });
+              } catch (e) {}
+            }
+          }
+          return;
+        }
+        
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          set({ user: session?.user || null });
+        });
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+          set({ user: session?.user || null });
+        });
+
+        return () => {
+          if (subscription && typeof subscription.unsubscribe === 'function') {
+            subscription.unsubscribe();
+          }
+        };
+      },
 
       lang: 'en',
       setLang: (lang) => set({ lang }),
