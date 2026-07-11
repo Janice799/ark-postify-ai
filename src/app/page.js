@@ -12,17 +12,18 @@ import { useUIStore } from '../store/useUIStore';
 import { AnimatePresence, motion } from 'framer-motion';
 
 export default function Home() {
-  const { activeTab, initializeAuth } = useUIStore();
+  const { activeTab, initializeAuth, probeLocalApi } = useUIStore();
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
+    probeLocalApi();
     const cleanup = initializeAuth();
     return () => {
       if (typeof cleanup === 'function') cleanup();
     };
-  }, [initializeAuth]);
+  }, [initializeAuth, probeLocalApi]);
 
   if (!mounted) {
     return (

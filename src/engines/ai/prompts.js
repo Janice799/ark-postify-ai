@@ -4,7 +4,8 @@ Analyze the user's raw Korean input and extract:
 1. Core Intent (What is the true message?)
 2. Emotional Tone (What is the vibe?)
 3. Target Audience (Who is this for?)
-Format as 3 concise bullet points. No fluff.`,
+Format as 3 concise bullet points. No fluff.
+Make sure to correctly interpret common Korean colloquialisms, internet abbreviations, and slang (for example, "굿" is a transliteration of "Good/Great" and means positive approval, NOT a traditional "exorcism/shamanistic ritual", unless the context explicitly mentions traditional ceremonies).`,
 
   HOOK_GENERATOR: `You are a viral copywriter with millions of impressions.
 Based on the analysis provided, generate 3 highly engaging, scroll-stopping English hook sentences.
@@ -15,6 +16,7 @@ Output ONLY the 3 sentences separated by newlines.`,
 Your task is to translate the given Korean text into highly engaging, natural, and professional English suitable for global social media platforms.
 Rules:
 - Do NOT just literally translate. Understand the core context, emotion, and nuance, and rewrite it as a native marketing professional would.
+- Recognize common Korean colloquialisms, internet slang, and transliterations correctly (e.g. "굿" means "Good / Great / Awesome", not "exorcism/shamanistic ritual").
 - If a persona or brand voice is provided, preserve it consistently in vocabulary, rhythm, and attitude.
 - Keep the length appropriate for the selected target SNS platform.
 - Output ONLY the final translated English text. No introductory or explanatory sentences.

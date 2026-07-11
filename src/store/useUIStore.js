@@ -64,6 +64,23 @@ export const useUIStore = create(
         };
       },
 
+      probeLocalApi: async () => {
+        if (typeof window === 'undefined') return;
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 1200);
+          const res = await fetch('http://localhost:3000/api/local/pull-status', { signal: controller.signal });
+          clearTimeout(timeoutId);
+          if (res.ok) {
+            set({ localApiUrl: 'http://localhost:3000' });
+          } else {
+            set({ localApiUrl: '' });
+          }
+        } catch (err) {
+          set({ localApiUrl: '' });
+        }
+      },
+
       lang: 'en',
       setLang: (lang) => set({ lang }),
 
