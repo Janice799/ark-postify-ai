@@ -20,6 +20,7 @@ export const ConfigPanel = () => {
   const [isLocalHost, setIsLocalHost] = useState(true);
   const [localApiUrl, setLocalApiUrl] = useState('');
   const [downloadError, setDownloadError] = useState(null);
+  const [systemSpecs, setSystemSpecs] = useState(null);
 
   useEffect(() => {
     const probeLocalApi = async () => {
@@ -32,10 +33,27 @@ export const ConfigPanel = () => {
           setLocalApiUrl('http://localhost:3000');
           setIsLocalHost(true);
           console.log('[Postify AI] Connected to local development backend at http://localhost:3000');
+          
+          try {
+            const specRes = await fetch('http://localhost:3000/api/local/system-specs');
+            if (specRes.ok) {
+              const specData = await specRes.json();
+              setSystemSpecs(specData);
+            }
+          } catch (err) {
+            console.warn('Failed to fetch local specs:', err);
+          }
         } else {
           if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
             setLocalApiUrl('');
             setIsLocalHost(true);
+            try {
+              const specRes = await fetch('/api/local/system-specs');
+              if (specRes.ok) {
+                const specData = await specRes.json();
+                setSystemSpecs(specData);
+              }
+            } catch (err) {}
           } else {
             setLocalApiUrl('');
             setIsLocalHost(false);
@@ -45,6 +63,13 @@ export const ConfigPanel = () => {
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
           setLocalApiUrl('');
           setIsLocalHost(true);
+          try {
+            const specRes = await fetch('/api/local/system-specs');
+            if (specRes.ok) {
+              const specData = await specRes.json();
+              setSystemSpecs(specData);
+            }
+          } catch (err) {}
         } else {
           setLocalApiUrl('');
           setIsLocalHost(false);
@@ -68,6 +93,18 @@ export const ConfigPanel = () => {
            l.includes('openrail') || 
            l.includes('cc-by-4.0') || 
            l.includes('cc-by-sa-4.0');
+  };
+
+  const estimateModelMemoryGB = (fileName) => {
+    const id = fileName.toLowerCase();
+    const paramM = id.match(/(\d+(?:\.\d+)?)\s*b\b/);
+    const totalB = paramM ? parseFloat(paramM[1]) : 7;
+    let bytesPerParam = 0.6; // 4-bit default
+    if (/q8|8bit|fp8/i.test(id)) bytesPerParam = 1.0;
+    else if (/q5|5bit/i.test(id)) bytesPerParam = 0.7;
+    else if (/q6|6bit/i.test(id)) bytesPerParam = 0.8;
+    else if (/fp16|f16|bf16/i.test(id)) bytesPerParam = 2.0;
+    return totalB * bytesPerParam + 1.0;
   };
 
   // Fetch installed and downloading models status
@@ -292,14 +329,20 @@ export const ConfigPanel = () => {
                       </div>
                     </div>
                   ) : (
-                    localApiUrl && (
+                    (localApiUrl || systemSpecs) && (
                       <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 flex gap-3 text-emerald-400">
                         <CheckCircle2 className="flex-shrink-0 mt-0.5" size={18} />
-                        <div className="text-[13px] leading-relaxed">
-                          <strong>로컬 개발 서버 감지됨 ({localApiUrl})</strong>
+                        <div className="text-[13px] leading-relaxed w-full">
+                          <strong>로컬 개발 서버 감지됨 ({localApiUrl || 'localhost:3000'})</strong>
                           <p className="mt-1 opacity-90 text-[12px]">
                             로컬 PC의 백엔드와 연결되었습니다. HuggingFace GGUF 모델의 검색, 다운로드 및 구동이 가능합니다.
                           </p>
+                          {systemSpecs && (
+                            <div className="mt-2 pt-2 border-t border-emerald-500/20 text-[11px] opacity-80 flex flex-col gap-0.5">
+                              <span>🖥️ 사양: {systemSpecs.summary}</span>
+                              <span>🧠 안전 모델 메모리 예산: <strong className="text-emerald-300">{systemSpecs.safeModelBudgetGB} GB RAM</strong></span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )
@@ -417,11 +460,16 @@ export const ConfigPanel = () => {
                             const repoInfo = hfModels.find(m => m.id === selectedRepo);
                             const isCommercial = repoInfo ? isCommercialLicense(repoInfo.license) : true;
                             const isDownloadDisabled = !isCommercial || !isLocalHost;
+                            const estMemGB = estimateModelMemoryGB(file);
+                            const isOverBudget = systemSpecs && estMemGB > systemSpecs.safeModelBudgetGB;
                             
                             return (
                               <div key={file} className="flex items-center justify-between p-2.5 bg-black/10 border border-[var(--border-color)] rounded-lg">
-                                <span className="text-[12px] font-mono text-[var(--text-primary)] truncate max-w-[70%]" title={file}>
-                                  {file}
+                                <span className="text-[12px] font-mono text-[var(--text-primary)] truncate max-w-[55%] flex flex-col" title={file}>
+                                  <span className="truncate">{file}</span>
+                                  <span className={`text-[10px] mt-0.5 ${isOverBudget ? 'text-rose-400 font-semibold' : 'text-[var(--text-secondary)]'}`}>
+                                    요구 메모리: {estMemGB.toFixed(1)} GB RAM {isOverBudget && '⚠️ 메모리 초과 경고'}
+                                  </span>
                                 </span>
                                 
                                 {isDownloaded ? (
@@ -442,7 +490,7 @@ export const ConfigPanel = () => {
                                   <button
                                     type="button"
                                     onClick={() => handleDownloadModel(selectedRepo, file)}
-                                    className="px-2.5 py-1 border border-[var(--border-color)] hover:border-[var(--text-primary)] hover:bg-white/5 rounded text-[11px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] font-medium flex items-center gap-1 transition-all"
+                                    className={`px-2.5 py-1 border rounded text-[11px] font-medium flex items-center gap-1 transition-all ${isOverBudget ? 'border-rose-500/30 text-rose-400 hover:bg-rose-500/10 hover:border-rose-400' : 'border-[var(--border-color)] hover:border-[var(--text-primary)] hover:bg-white/5 text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
                                   >
                                     <Download size={10} />
                                     Download
