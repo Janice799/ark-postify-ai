@@ -55,7 +55,13 @@ export const runLocalAiPipeline = async (userPrompt, config) => {
     persona ? `Persona / Brand Voice:\n${persona}\n` : ''
   );
   
-  const formattedPrompt = `${SYSTEM_PROMPTS.ANALYZER}\n\n${composerPrompt}\n\n${personaInstruction}Original Topic/Content:\n${userPrompt}\n\nWrite the final polished English post:`;
+  const formattedPrompt = `You are a world-class, top-tier bilingual social media copywriter.
+${composerPrompt}
+
+${personaInstruction}Original Korean Content:
+"${userPrompt}"
+
+Write the final post in English. Output ONLY the post body text. Do NOT include any introductory sentences, explanations, analysis, or headings:`;
   const responseText = await session.prompt(formattedPrompt);
   return responseText;
 };
