@@ -1,6 +1,19 @@
 import fs from 'fs';
 import path from 'path';
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+export async function OPTIONS() {
+  return new Response(null, {
+    status: 204,
+    headers: corsHeaders
+  });
+}
+
 global.pullingModels = global.pullingModels || new Map();
 
 export async function GET(req) {
@@ -26,8 +39,8 @@ export async function GET(req) {
         });
     }
 
-    return Response.json({ pulling, installed });
+    return Response.json({ pulling, installed }, { headers: corsHeaders });
   } catch (err) {
-    return Response.json({ error: err.message }, { status: 500 });
+    return Response.json({ error: err.message }, { status: 500, headers: corsHeaders });
   }
 }

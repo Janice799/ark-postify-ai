@@ -18,11 +18,42 @@ export const ConfigPanel = () => {
   const [downloadingModels, setDownloadingModels] = useState([]);
   const [onlyCommercial, setOnlyCommercial] = useState(true);
   const [isLocalHost, setIsLocalHost] = useState(true);
+  const [localApiUrl, setLocalApiUrl] = useState('');
   const [downloadError, setDownloadError] = useState(null);
 
   useEffect(() => {
+    const probeLocalApi = async () => {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 1200);
+        const res = await fetch('http://localhost:3000/api/local/pull-status', { signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (res.ok) {
+          setLocalApiUrl('http://localhost:3000');
+          setIsLocalHost(true);
+          console.log('[Postify AI] Connected to local development backend at http://localhost:3000');
+        } else {
+          if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            setLocalApiUrl('');
+            setIsLocalHost(true);
+          } else {
+            setLocalApiUrl('');
+            setIsLocalHost(false);
+          }
+        }
+      } catch (e) {
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+          setLocalApiUrl('');
+          setIsLocalHost(true);
+        } else {
+          setLocalApiUrl('');
+          setIsLocalHost(false);
+        }
+      }
+    };
+
     if (typeof window !== 'undefined') {
-      setIsLocalHost(window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+      probeLocalApi();
     }
   }, []);
 
@@ -42,7 +73,7 @@ export const ConfigPanel = () => {
   // Fetch installed and downloading models status
   const fetchLocalModelsStatus = async () => {
     try {
-      const res = await fetch('/api/local/pull-status');
+      const res = await fetch(`${localApiUrl}/api/local/pull-status`);
       if (res.ok) {
         const data = await res.json();
         setInstalledModels(data.installed || []);
@@ -60,7 +91,7 @@ export const ConfigPanel = () => {
       fetchLocalModelsStatus();
     }, 2000);
     return () => clearInterval(interval);
-  }, []);
+  }, [localApiUrl]);
 
   const handleSearchHf = async (e) => {
     if (e) e.preventDefault();
@@ -70,7 +101,7 @@ export const ConfigPanel = () => {
     setRepoFiles([]);
     setDownloadError(null);
     try {
-      const res = await fetch(`/api/local/hf-search?query=${encodeURIComponent(hfSearchQuery)}&token=${encodeURIComponent(hfToken || '')}`);
+      const res = await fetch(`${localApiUrl}/api/local/hf-search?query=${encodeURIComponent(hfSearchQuery)}&token=${encodeURIComponent(hfToken || '')}`);
       if (res.ok) {
         const data = await res.json();
         setHfModels(data.models || []);
@@ -87,7 +118,7 @@ export const ConfigPanel = () => {
     setLoadingFiles(true);
     setDownloadError(null);
     try {
-      const res = await fetch(`/api/local/hf-files?repoId=${encodeURIComponent(repoId)}&token=${encodeURIComponent(hfToken || '')}`);
+      const res = await fetch(`${localApiUrl}/api/local/hf-files?repoId=${encodeURIComponent(repoId)}&token=${encodeURIComponent(hfToken || '')}`);
       if (res.ok) {
         const data = await res.json();
         setRepoFiles(data.files || []);
@@ -105,7 +136,7 @@ export const ConfigPanel = () => {
 
     setDownloadError(null);
     try {
-      const res = await fetch('/api/local/pull', {
+      const res = await fetch(`${localApiUrl}/api/local/pull`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ repoId, fileName })
@@ -250,8 +281,8 @@ export const ConfigPanel = () => {
                     HUGGINGFACE GGUF SEARCH
                   </div>
 
-                  {!isLocalHost && (
-                    <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 flex gap-3 text-red-400">
+                  {!isLocalHost ? (
+                    <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 flex gap-3 text-red-400 animate-pulse">
                       <AlertTriangle className="flex-shrink-0 mt-0.5" size={18} />
                       <div className="text-[13px] leading-relaxed">
                         <strong>로컬 개발 환경(localhost) 구동이 필요합니다.</strong>
@@ -260,6 +291,18 @@ export const ConfigPanel = () => {
                         </p>
                       </div>
                     </div>
+                  ) : (
+                    localApiUrl && (
+                      <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 flex gap-3 text-emerald-400">
+                        <CheckCircle2 className="flex-shrink-0 mt-0.5" size={18} />
+                        <div className="text-[13px] leading-relaxed">
+                          <strong>로컬 개발 서버 감지됨 ({localApiUrl})</strong>
+                          <p className="mt-1 opacity-90 text-[12px]">
+                            로컬 PC의 백엔드와 연결되었습니다. HuggingFace GGUF 모델의 검색, 다운로드 및 구동이 가능합니다.
+                          </p>
+                        </div>
+                      </div>
+                    )
                   )}
 
                   {downloadError && (

@@ -1,10 +1,23 @@
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+export async function OPTIONS() {
+  return new Response(null, {
+    status: 204,
+    headers: corsHeaders
+  });
+}
+
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const query = searchParams.get('query') || '';
   const token = searchParams.get('token') || '';
   
   if (!query) {
-    return Response.json({ models: [] });
+    return Response.json({ models: [] }, { headers: corsHeaders });
   }
 
   try {
@@ -28,8 +41,8 @@ export async function GET(req) {
         license: license
       };
     });
-    return Response.json({ models });
+    return Response.json({ models }, { headers: corsHeaders });
   } catch (err) {
-    return Response.json({ error: err.message }, { status: 500 });
+    return Response.json({ error: err.message }, { status: 500, headers: corsHeaders });
   }
 }

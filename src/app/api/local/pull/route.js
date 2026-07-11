@@ -1,13 +1,26 @@
 import fs from 'fs';
 import path from 'path';
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+export async function OPTIONS() {
+  return new Response(null, {
+    status: 204,
+    headers: corsHeaders
+  });
+}
+
 global.pullingModels = global.pullingModels || new Map();
 
 export async function POST(req) {
   try {
     const { repoId, fileName } = await req.json();
     if (!repoId || !fileName) {
-      return Response.json({ error: 'repoId and fileName are required' }, { status: 400 });
+      return Response.json({ error: 'repoId and fileName are required' }, { status: 400, headers: corsHeaders });
     }
 
     const modelsDir = path.join(process.cwd(), 'models');
@@ -18,7 +31,7 @@ export async function POST(req) {
     const localPath = path.join(modelsDir, fileName);
     
     if (global.pullingModels.has(fileName)) {
-      return Response.json({ message: 'Already downloading this model' });
+      return Response.json({ message: 'Already downloading this model' }, { headers: corsHeaders });
     }
 
     const downloadUrl = `https://huggingface.co/${repoId}/resolve/main/${fileName}`;
@@ -85,8 +98,8 @@ export async function POST(req) {
       }
     })();
 
-    return Response.json({ success: true, message: `Started pulling model ${fileName} in the background.` });
+    return Response.json({ success: true, message: `Started pulling model ${fileName} in the background.` }, { headers: corsHeaders });
   } catch (err) {
-    return Response.json({ error: err.message }, { status: 500 });
+    return Response.json({ error: err.message }, { status: 500, headers: corsHeaders });
   }
 }
