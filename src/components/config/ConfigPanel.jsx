@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Bot, Key, Shield, Search, Download, CheckCircle2, Loader, Folder, Cpu, AlertTriangle, Trash2, Play, Square } from 'lucide-react';
 
 export const ConfigPanel = () => {
-  const { apiKey, setApiKey, geminiKey, setGeminiKey, aiProvider, setAiProvider, lang, localModelPath, setLocalModelPath, hfToken, setHfToken, showToast } = useUIStore();
+  const { apiKey, setApiKey, geminiKey, setGeminiKey, aiProvider, setAiProvider, lang, localModelPath, setLocalModelPath, hfToken, setHfToken, showToast, localApiUrl, setLocalApiUrl } = useUIStore();
   const t = translations[lang || 'en'].config;
 
   // HuggingFace & Local Models states
@@ -18,7 +18,6 @@ export const ConfigPanel = () => {
   const [downloadingModels, setDownloadingModels] = useState([]);
   const [onlyCommercial, setOnlyCommercial] = useState(true);
   const [isLocalHost, setIsLocalHost] = useState(true);
-  const [localApiUrl, setLocalApiUrl] = useState('');
   const [downloadError, setDownloadError] = useState(null);
   const [systemSpecs, setSystemSpecs] = useState(null);
   const [pathExists, setPathExists] = useState(true);

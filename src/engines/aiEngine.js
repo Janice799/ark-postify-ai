@@ -45,7 +45,7 @@ const resolveProviderConfig = ({ aiProvider, apiKey, geminiKey }) => {
 
 const runGenerationRequest = async ({ action = 'generate', errorLabel }) => {
   const { koreanText, persona, setIsTranslating, clearEnglishText, setEnglishText } = useEditorStore.getState();
-  const { apiKey, geminiKey, aiProvider, localModelPath } = useUIStore.getState();
+  const { apiKey, geminiKey, aiProvider, localModelPath, localApiUrl } = useUIStore.getState();
 
   if (!koreanText) return;
 
@@ -60,7 +60,8 @@ const runGenerationRequest = async ({ action = 'generate', errorLabel }) => {
         throw new Error('로컬 GGUF 모델 파일 경로가 설정되어 있지 않습니다. CONFIG 메뉴에서 활성 모델을 선택하거나 로드해 주세요.');
       }
       try {
-        const existsRes = await fetch(`/api/local/exists?path=${encodeURIComponent(localModelPath)}`);
+        const checkUrl = `${localApiUrl || ''}/api/local/exists?path=${encodeURIComponent(localModelPath)}`;
+        const existsRes = await fetch(checkUrl);
         if (existsRes.ok) {
           const existsData = await existsRes.json();
           if (!existsData.exists) {
@@ -72,7 +73,11 @@ const runGenerationRequest = async ({ action = 'generate', errorLabel }) => {
       }
     }
 
-    const response = await fetch('/api/generate', {
+    const targetUrl = resolved.provider === 'local' && localApiUrl
+      ? `${localApiUrl}/api/generate`
+      : '/api/generate';
+
+    const response = await fetch(targetUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

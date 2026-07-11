@@ -119,6 +119,9 @@ export const useUIStore = create(
       localModelPath: '',
       setLocalModelPath: (path) => set({ localModelPath: path }),
 
+      localApiUrl: '',
+      setLocalApiUrl: (url) => set({ localApiUrl: url }),
+
       hfToken: '',
       setHfToken: (token) => set({ hfToken: token }),
 
