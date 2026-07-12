@@ -8,6 +8,7 @@ import { DraftsPanel } from '../components/drafts/DraftsPanel';
 import { ThemesPanel } from '../components/themes/ThemesPanel';
 import { ConfigPanel } from '../components/config/ConfigPanel';
 import { CommitCraftPanel } from '../components/commitcraft/CommitCraftPanel';
+import { MvpPanel } from '../components/mvp/MvpPanel';
 import { useUIStore } from '../store/useUIStore';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -71,6 +72,11 @@ export default function Home() {
           {activeTab === 'settings' && (
             <motion.div key="settings" {...pageVariants} className="flex w-full h-full absolute inset-0">
               <ConfigPanel />
+            </motion.div>
+          )}
+          {activeTab === 'mvp' && (
+            <motion.div key="mvp" {...pageVariants} className="flex w-full h-full absolute inset-0">
+              <MvpPanel />
             </motion.div>
           )}
         </AnimatePresence>

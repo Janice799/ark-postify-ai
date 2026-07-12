@@ -5,7 +5,8 @@ export const translations = {
       drafts: 'DRAFTS',
       themes: 'THEMES',
       config: 'CONFIG',
-      commitcraft: 'DEVLOG'
+      commitcraft: 'DEVLOG',
+      mvp: 'MVP'
     },
     editor: {
       manualMode: 'Write Manually',
@@ -118,7 +119,8 @@ export const translations = {
       drafts: '보관함',
       themes: '테마',
       config: '설정',
-      commitcraft: '개발로그'
+      commitcraft: '개발로그',
+      mvp: 'MVP'
     },
     editor: {
       manualMode: '직접 입력',

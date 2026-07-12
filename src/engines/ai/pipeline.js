@@ -11,7 +11,7 @@ const getPersonaInstruction = (persona) => {
   return `Persona / Brand Voice:\n${persona}\n\n`;
 };
 
-const getModel = (provider, apiKey, geminiKey) => {
+export const getModel = (provider, apiKey, geminiKey) => {
   if (provider === 'gemini') {
     const resolvedKey = geminiKey || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
     if (!resolvedKey) {
