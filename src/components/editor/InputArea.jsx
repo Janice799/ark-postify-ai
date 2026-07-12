@@ -11,7 +11,7 @@ import { motion } from 'framer-motion';
 import { translations } from '../../lib/translations';
 
 export const InputArea = () => {
-  const { mode, setMode, targetSNS, setTargetSNS, koreanText, setKoreanText, persona, setPersona, englishText, setEnglishText, isTranslating } = useEditorStore();
+  const { mode, setMode, targetSNS, setTargetSNS, koreanText, setKoreanText, persona, setPersona, englishText, setEnglishText, koreanTranslation, setKoreanTranslation, isTranslating } = useEditorStore();
   const { bgStyle, lang } = useUIStore();
   const { saveDraft } = useDraftStore();
   const t = translations[lang || 'en'].editor;
@@ -108,7 +108,7 @@ export const InputArea = () => {
             <Button 
               variant="secondary" 
               onClick={() => {
-                saveDraft({ koreanText, englishText, persona, bgStyle });
+                saveDraft({ koreanText, englishText, persona, bgStyle, koreanTranslation });
                 alert(t.saveSuccess);
               }}
               className="py-1.5 px-3 text-[12px] h-8"
@@ -127,6 +127,20 @@ export const InputArea = () => {
           onChange={(e) => setEnglishText(e.target.value)}
           rows={7}
         />
+        
+        {koreanTranslation && (
+          <div className="mt-5">
+            <label className="text-[13px] font-medium text-[var(--text-secondary)] mb-2 block">
+              {lang === 'ko' ? '한글 번역 / 해석 (참조용)' : 'Korean Translation (Reference)'}
+            </label>
+            <TextArea
+              className="bg-black/20 border-[var(--border-color)] text-[14px] text-[var(--text-secondary)]"
+              value={koreanTranslation}
+              onChange={(e) => setKoreanTranslation(e.target.value)}
+              rows={4}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

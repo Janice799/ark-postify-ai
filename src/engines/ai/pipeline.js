@@ -96,6 +96,27 @@ export const runTranslationPipeline = async (userPrompt, config) => {
   return translatedParagraphs.join('\n');
 };
 
+export const translateEnglishToKorean = async (englishText) => {
+  if (!englishText) return '';
+  const paragraphs = englishText.split('\n');
+  const translatedParagraphs = await Promise.all(
+    paragraphs.map(async (paragraph) => {
+      if (!paragraph.trim()) return '';
+      const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ko&dt=t&q=${encodeURIComponent(paragraph)}`;
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Google Translate API HTTP error: ${response.status}`);
+      }
+      const data = await response.json();
+      if (!data || !data[0]) {
+        throw new Error('Failed to parse Google Translate response.');
+      }
+      return data[0].map(item => item[0]).join('');
+    })
+  );
+  return translatedParagraphs.join('\n');
+};
+
 export const runCommitCraftPipeline = async (commits, config) => {
   const { provider, apiKey, geminiKey, repoName, persona } = config;
   const model = getModel(provider, apiKey, geminiKey);

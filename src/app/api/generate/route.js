@@ -1,4 +1,4 @@
-import { runAiPipeline, runTranslationPipeline } from '../../../engines/ai/pipeline';
+import { runAiPipeline, runTranslationPipeline, translateEnglishToKorean } from '../../../engines/ai/pipeline';
 
 const ALLOWED_ACTIONS = new Set(['generate', 'translate']);
 const ALLOWED_PROVIDERS = new Set(['openai', 'gemini', 'local']);
@@ -58,14 +58,16 @@ export async function POST(req) {
 
     if (action === 'translate') {
       const result = await runTranslationPipeline(prompt, { provider, targetSNS, apiKey, geminiKey, persona, localModelPath });
-      return Response.json({ text: result }, { headers: corsHeaders });
+      return Response.json({ text: result, translation: prompt }, { headers: corsHeaders });
     } else if (provider === 'local') {
       const { runLocalAiPipeline } = await import('../../../engines/ai/localPipeline');
       const result = await runLocalAiPipeline(prompt, { provider, targetSNS, apiKey, geminiKey, persona, localModelPath });
-      return Response.json({ text: result }, { headers: corsHeaders });
+      const translation = await translateEnglishToKorean(result);
+      return Response.json({ text: result, translation }, { headers: corsHeaders });
     } else {
       const result = await runAiPipeline(prompt, { provider, targetSNS, apiKey, geminiKey, persona, localModelPath });
-      return Response.json({ text: result }, { headers: corsHeaders });
+      const translation = await translateEnglishToKorean(result);
+      return Response.json({ text: result, translation }, { headers: corsHeaders });
     }
   } catch (error) {
     return jsonError(error.message || 'AI request failed.', 500, 'AI_PIPELINE_ERROR');

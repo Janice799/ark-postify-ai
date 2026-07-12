@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 export const useEditorStore = create((set) => ({
-  mode: 'manual', // 'ai' or 'manual'
+  mode: 'ai', // 'ai' or 'manual'
   setMode: (mode) => set({ mode }),
   
   targetSNS: 'x', // 'x', 'linkedin', 'instagram'
@@ -17,6 +17,10 @@ export const useEditorStore = create((set) => ({
   setEnglishText: (text) => set({ englishText: text }),
   appendEnglishText: (text) => set((state) => ({ englishText: state.englishText + text })),
   clearEnglishText: () => set({ englishText: '' }),
+
+  koreanTranslation: '',
+  setKoreanTranslation: (text) => set({ koreanTranslation: text }),
+  clearKoreanTranslation: () => set({ koreanTranslation: '' }),
   
   isTranslating: false,
   setIsTranslating: (status) => set({ isTranslating: status }),

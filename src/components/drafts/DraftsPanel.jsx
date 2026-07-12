@@ -9,7 +9,7 @@ import { translations } from '../../lib/translations';
 
 export const DraftsPanel = () => {
   const { drafts, deleteDraft } = useDraftStore();
-  const { setKoreanText, setEnglishText } = useEditorStore();
+  const { setKoreanText, setEnglishText, setKoreanTranslation } = useEditorStore();
   const { setBgStyle, setActiveTab, lang, draftsPassword, setDraftsPassword, draftsUnlocked, setDraftsUnlocked } = useUIStore();
   const t = translations[lang || 'en'].drafts;
 
@@ -56,6 +56,7 @@ export const DraftsPanel = () => {
   const handleLoad = (draft) => {
     setKoreanText(draft.koreanText || '');
     setEnglishText(draft.englishText || '');
+    setKoreanTranslation(draft.koreanTranslation || '');
     if (draft.bgStyle) setBgStyle(draft.bgStyle);
     setActiveTab('home');
   };

@@ -44,13 +44,14 @@ const resolveProviderConfig = ({ aiProvider, apiKey, geminiKey }) => {
 };
 
 const runGenerationRequest = async ({ action = 'generate', errorLabel }) => {
-  const { koreanText, persona, setIsTranslating, clearEnglishText, setEnglishText } = useEditorStore.getState();
+  const { koreanText, persona, setIsTranslating, clearEnglishText, setEnglishText, clearKoreanTranslation, setKoreanTranslation } = useEditorStore.getState();
   const { apiKey, geminiKey, aiProvider, localModelPath, localApiUrl } = useUIStore.getState();
 
   if (!koreanText) return;
 
   setIsTranslating(true);
   clearEnglishText();
+  clearKoreanTranslation();
 
   try {
     const resolved = resolveProviderConfig({ aiProvider, apiKey, geminiKey });
@@ -100,9 +101,11 @@ const runGenerationRequest = async ({ action = 'generate', errorLabel }) => {
 
     const data = await response.json();
     setEnglishText(data?.text || '');
+    setKoreanTranslation(data?.translation || '');
   } catch (error) {
     console.error('Translation stream error:', error);
     setEnglishText(`${errorLabel}: ${error.message}`);
+    setKoreanTranslation('');
   } finally {
     setIsTranslating(false);
   }
