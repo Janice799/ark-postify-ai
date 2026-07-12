@@ -47,7 +47,7 @@ export const ConfigPanel = () => {
 
   useEffect(() => {
     const probe = async () => {
-      const targetUrl = localApiUrl || 'http://localhost:3000';
+      const targetUrl = localApiUrl || 'http://localhost:3005';
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 1200);
@@ -278,13 +278,13 @@ export const ConfigPanel = () => {
                 </div>
                 <input 
                   type="text"
-                  placeholder="e.g. http://localhost:3000"
+                  placeholder="e.g. http://localhost:3005"
                   value={localApiUrl || ''}
                   onChange={(e) => setLocalApiUrl(e.target.value)}
                   className="w-full bg-[rgba(0,0,0,0.3)] border border-[var(--border-color)] rounded-xl p-4 text-[15px] font-mono text-[var(--text-primary)] outline-none focus:border-[var(--text-primary)] transition-all shadow-inner"
                 />
                 <p className="text-[11px] text-[var(--text-secondary)] mt-1.5">
-                  {lang === 'en' ? 'Default: http://localhost:3000. Change this if your local dev server runs on a different port.' : '기본값: http://localhost:3000. 포트가 충돌하여 로컬 서버를 다른 포트에서 실행할 때 주소를 변경해 주세요.'}
+                  {lang === 'en' ? 'Default: http://localhost:3005. Change this if your local dev server runs on a different port.' : '기본값: http://localhost:3005. 포트가 충돌하여 로컬 서버를 다른 포트에서 실행할 때 주소를 변경해 주세요.'}
                 </p>
               </div>
 
@@ -423,7 +423,7 @@ export const ConfigPanel = () => {
                       <div className="text-[13px] leading-relaxed">
                         <strong>로컬 개발 환경(localhost) 구동이 필요합니다.</strong>
                         <p className="mt-1 opacity-90 text-[12px]">
-                          GGUF 모델 다운로드 및 구동 기능은 로컬 PC에서 <strong>npm run dev (localhost:3000)</strong>를 실행하여 접속할 때만 작동합니다. Vercel 클라우드 배포판에서는 서버 용량 및 쓰기 불가능한 파일시스템 환경으로 인해 다운로드가 제한됩니다.
+                          GGUF 모델 다운로드 및 구동 기능은 로컬 PC에서 <strong>npm run dev (localhost:3005)</strong>를 실행하여 접속할 때만 작동합니다. Vercel 클라우드 배포판에서는 서버 용량 및 쓰기 불가능한 파일시스템 환경으로 인해 다운로드가 제한됩니다.
                         </p>
                       </div>
                     </div>
@@ -432,7 +432,7 @@ export const ConfigPanel = () => {
                       <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 flex gap-3 text-emerald-400">
                         <CheckCircle2 className="flex-shrink-0 mt-0.5" size={18} />
                         <div className="text-[13px] leading-relaxed w-full">
-                          <strong>로컬 개발 서버 감지됨 ({localApiUrl || 'localhost:3000'})</strong>
+                          <strong>로컬 개발 서버 감지됨 ({localApiUrl || 'localhost:3005'})</strong>
                           <p className="mt-1 opacity-90 text-[12px]">
                             로컬 PC의 백엔드와 연결되었습니다. HuggingFace GGUF 모델의 검색, 다운로드 및 구동이 가능합니다.
                           </p>

@@ -66,7 +66,7 @@ export const useUIStore = create(
 
       probeLocalApi: async () => {
         if (typeof window === 'undefined') return;
-        const targetUrl = get().localApiUrl || 'http://localhost:3000';
+        const targetUrl = get().localApiUrl || 'http://localhost:3005';
         try {
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 1200);
@@ -137,7 +137,7 @@ export const useUIStore = create(
       localModelPath: '',
       setLocalModelPath: (path) => set({ localModelPath: path }),
 
-      localApiUrl: 'http://localhost:3000',
+      localApiUrl: 'http://localhost:3005',
       setLocalApiUrl: (url) => set({ localApiUrl: url }),
 
       isLocalConnected: false,
