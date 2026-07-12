@@ -107,7 +107,8 @@ export const CanvasRenderer = forwardRef((props, ref) => {
         }}
       >
         <div 
-          className="w-full whitespace-pre-wrap break-words transition-all duration-300" 
+          className="w-full whitespace-pre-wrap break-words transition-all duration-300 notranslate" 
+          translate="no"
           style={{ 
             fontFamily: fontFamily,
             color: resolvedTextColor,
