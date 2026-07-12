@@ -98,7 +98,6 @@ export const Sidebar = () => {
         <NavButton id="commitcraft" icon={GitBranch} label={t.commitcraft} activeTab={activeTab} setActiveTab={setActiveTab} />
         <NavButton id="drafts" icon={Edit3} label={t.drafts} activeTab={activeTab} setActiveTab={setActiveTab} />
         <NavButton id="backgrounds" icon={ImageIcon} label={t.themes} activeTab={activeTab} setActiveTab={setActiveTab} />
-        <NavButton id="mvp" icon={MessageSquare} label={t.mvp} activeTab={activeTab} setActiveTab={setActiveTab} />
         <NavButton id="settings" icon={Settings} label={t.config} activeTab={activeTab} setActiveTab={setActiveTab} />
       </div>
 
