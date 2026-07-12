@@ -417,13 +417,13 @@ export const ConfigPanel = () => {
                     HUGGINGFACE GGUF SEARCH
                   </div>
 
-                  {!isLocalHost ? (
+                  {!isLocalConnected ? (
                     <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 flex gap-3 text-red-400 animate-pulse">
                       <AlertTriangle className="flex-shrink-0 mt-0.5" size={18} />
                       <div className="text-[13px] leading-relaxed">
-                        <strong>로컬 개발 환경(localhost) 구동이 필요합니다.</strong>
+                        <strong>로컬 백엔드 서버에 연결할 수 없습니다.</strong>
                         <p className="mt-1 opacity-90 text-[12px]">
-                          GGUF 모델 다운로드 및 구동 기능은 로컬 PC에서 <strong>npm run dev (localhost:3005)</strong>를 실행하여 접속할 때만 작동합니다. Vercel 클라우드 배포판에서는 서버 용량 및 쓰기 불가능한 파일시스템 환경으로 인해 다운로드가 제한됩니다.
+                          로컬 서버(기본값: http://localhost:3005)가 실행 중인지 확인하고, CONFIG 상단의 Local API Server URL 설정을 맞춰 주세요.
                         </p>
                       </div>
                     </div>
@@ -558,7 +558,7 @@ export const ConfigPanel = () => {
                             const isDownloading = downloadingModels.some(m => m.name === file);
                             const repoInfo = hfModels.find(m => m.id === selectedRepo);
                             const isCommercial = repoInfo ? isCommercialLicense(repoInfo.license) : true;
-                            const isDownloadDisabled = !isCommercial || !isLocalHost;
+                            const isDownloadDisabled = !isCommercial || !isLocalConnected;
                             const estMemGB = estimateModelMemoryGB(file);
                             const isOverBudget = systemSpecs && estMemGB > systemSpecs.safeModelBudgetGB;
                             
@@ -583,7 +583,7 @@ export const ConfigPanel = () => {
                                   </span>
                                 ) : isDownloadDisabled ? (
                                   <span className="text-[10px] font-semibold text-red-400/80 bg-red-950/30 border border-red-500/20 px-2 py-0.5 rounded">
-                                    {!isLocalHost ? '로컬 한정' : '다운로드 제한'}
+                                    {!isLocalConnected ? '연결 필요' : '다운로드 제한'}
                                   </span>
                                 ) : (
                                   <button
