@@ -19,6 +19,16 @@ export default function Home() {
   React.useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
+    
+    // Auto-migrate stale port and model path typo from localStorage
+    const uiStore = useUIStore.getState();
+    if (uiStore.localApiUrl === 'http://localhost:3000') {
+      uiStore.setLocalApiUrl('http://localhost:3005');
+    }
+    if (uiStore.localModelPath && uiStore.localModelPath.endsWith('.gg')) {
+      uiStore.setLocalModelPath(uiStore.localModelPath + 'uf');
+    }
+    
     probeLocalApi();
     const cleanup = initializeAuth();
     return () => {
