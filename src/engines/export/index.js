@@ -123,8 +123,6 @@ export const renderCardToCanvas = async () => {
 
   const format = getSocialFormat(aspectRatio);
   const { width, height } = format;
-  const is169 = aspectRatio === '16:9';
-  const is45 = aspectRatio === '4:5';
   
   const canvas = document.createElement('canvas');
   canvas.width = width;
@@ -335,18 +333,11 @@ export const renderCardToCanvas = async () => {
   // 2. Draw Text Layer
   const isHandwrittenFont = /Gaegu|Single Day|Poor Story|Gamja Flower|Hi Melody|Dancing Script|Caveat/i.test(fontFamily);
   
-  const widthScale = width / 1200;
-  let fontSizeInPx = (is169 ? 90 : is45 ? 96 : 105) * widthScale;
-  if (fontSize === 'small') fontSizeInPx = (is169 ? 70 : is45 ? 74 : 80) * widthScale;
-  if (fontSize === 'large') fontSizeInPx = (is169 ? 120 : is45 ? 124 : 135) * widthScale;
-  if (fontSize === 'xlarge') fontSizeInPx = (is169 ? 150 : is45 ? 156 : 180) * widthScale;
-  
-  // Heuristic length-based scale to prevent clipping of long paragraphs
-  const textLength = englishText?.length || 0;
-  if (textLength > 100) {
-    const lengthScale = Math.max(0.52, 1 - (textLength - 100) * 0.0038);
-    fontSizeInPx = fontSizeInPx * lengthScale;
-  }
+  const legacyFontSizes = { small: 80, medium: 105, large: 135, xlarge: 180 };
+  const requestedFontSize = legacyFontSizes[fontSize] ?? Number(fontSize);
+  let fontSizeInPx = Number.isFinite(requestedFontSize)
+    ? Math.min(220, Math.max(24, requestedFontSize))
+    : 105;
   
   let dynamicLineHeight = 1.5;
   if (lineHeight === 'tight') dynamicLineHeight = 1.2;
@@ -392,7 +383,7 @@ export const renderCardToCanvas = async () => {
     if (totalHeight <= maxHeight) break;
 
     const fitScale = Math.min(0.96, (maxHeight / totalHeight) * 0.97);
-    fontSizeInPx = Math.max(24 * widthScale, fontSizeInPx * fitScale);
+    fontSizeInPx = Math.max(24, fontSizeInPx * fitScale);
   }
 
   ctx.font = `${fontWeight} ${fontSizeInPx}px ${fontFamily}`;

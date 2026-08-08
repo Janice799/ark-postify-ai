@@ -2,12 +2,29 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from '../lib/supabaseClient';
 
+const LEGACY_FONT_SIZES = {
+  small: 80,
+  medium: 105,
+  large: 135,
+  xlarge: 180,
+};
+
+const normalizeFontSize = (value) => {
+  const migratedValue = LEGACY_FONT_SIZES[value] ?? Number(value);
+  if (!Number.isFinite(migratedValue)) return 105;
+  return Math.min(220, Math.max(24, Math.round(migratedValue)));
+};
+
 // Custom storage that strips customBgImage and user before saving
 const safeStorage = {
   getItem: (name) => {
     const str = localStorage.getItem(name);
     if (!str) return null;
-    return JSON.parse(str);
+    const storedValue = JSON.parse(str);
+    if (storedValue?.state) {
+      storedValue.state.fontSize = normalizeFontSize(storedValue.state.fontSize);
+    }
+    return storedValue;
   },
   setItem: (name, value) => {
     const toSave = { ...value };
@@ -109,8 +126,8 @@ export const useUIStore = create(
       fontFamily: "'Noto Sans KR', 'Inter', sans-serif",
       setFontFamily: (font) => set({ fontFamily: font }),
       
-      fontSize: 'medium',
-      setFontSize: (size) => set({ fontSize: size }),
+      fontSize: 105,
+      setFontSize: (size) => set({ fontSize: normalizeFontSize(size) }),
       
       lineHeight: 'normal',
       setLineHeight: (height) => set({ lineHeight: height }),

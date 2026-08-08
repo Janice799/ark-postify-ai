@@ -30,6 +30,18 @@ const COLOR_PRESETS = [
   { value: '#ec4899', color: '#ec4899' },
 ];
 
+const LEGACY_FONT_SIZES = {
+  small: 80,
+  medium: 105,
+  large: 135,
+  xlarge: 180,
+};
+
+const resolveFontSize = (value) => {
+  const resolved = LEGACY_FONT_SIZES[value] ?? Number(value);
+  return Number.isFinite(resolved) ? resolved : 105;
+};
+
 export const Toolbar = () => {
   const { aspectRatio, setAspectRatio, fontFamily, setFontFamily, bgPosition, setBgPosition, fontSize, setFontSize, lineHeight, setLineHeight, textColor, setTextColor, customBgImage, setCustomBgImage, setBgStyle, bgStyle, myImages, setMyImages, addMyImage, removeMyImage, setActiveCategory, lang } = useUIStore();
   const t = translations[lang || 'en'].editor;
@@ -46,6 +58,7 @@ export const Toolbar = () => {
   };
 
   const [isFontOpen, setIsFontOpen] = useState(false);
+  const [fontSizeInput, setFontSizeInput] = useState(String(resolveFontSize(fontSize)));
   const fontRef = useRef(null);
   const fileInputRef = useRef(null);
   const colorInputRef = useRef(null);
@@ -67,6 +80,19 @@ export const Toolbar = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    setFontSizeInput(String(resolveFontSize(fontSize)));
+  }, [fontSize]);
+
+  const commitFontSize = () => {
+    const parsedValue = Number(fontSizeInput);
+    const nextValue = Number.isFinite(parsedValue)
+      ? Math.min(220, Math.max(24, Math.round(parsedValue)))
+      : 105;
+    setFontSizeInput(String(nextValue));
+    setFontSize(nextValue);
+  };
 
   const handleImageUpload = (e) => {
     const file = e.target.files?.[0];
@@ -222,17 +248,29 @@ export const Toolbar = () => {
       {/* Row 2: Font Size + Line Height */}
       <div className="flex gap-3">
         <div className="flex-1">
-          <label className="text-[12px] font-medium text-[var(--text-secondary)] mb-1.5 block">{t.fontSize}</label>
-          <select 
-            value={fontSize} 
-            onChange={(e) => setFontSize(e.target.value)}
-            className="w-full bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-lg p-2 text-[13px] text-[var(--text-primary)] outline-none cursor-pointer focus:border-[var(--accent-color)]"
-          >
-            <option value="small">{t.sizeSmall}</option>
-            <option value="medium">{t.sizeMedium}</option>
-            <option value="large">{t.sizeLarge}</option>
-            <option value="xlarge">{t.sizeXLarge}</option>
-          </select>
+          <label className="text-[12px] font-medium text-[var(--text-secondary)] mb-1.5 block">{t.fontSize} (px)</label>
+          <input
+            type="number"
+            min="24"
+            max="220"
+            step="2"
+            inputMode="numeric"
+            value={fontSizeInput}
+            onChange={(e) => {
+              const nextInput = e.target.value;
+              setFontSizeInput(nextInput);
+              const nextValue = Number(nextInput);
+              if (nextInput !== '' && Number.isFinite(nextValue) && nextValue >= 24 && nextValue <= 220) {
+                setFontSize(nextValue);
+              }
+            }}
+            onBlur={commitFontSize}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') e.currentTarget.blur();
+            }}
+            aria-label={`${t.fontSize} in pixels`}
+            className="w-full bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-lg p-2 text-[13px] text-[var(--text-primary)] outline-none tabular-nums focus:border-[var(--accent-color)]"
+          />
         </div>
         <div className="flex-1">
           <label className="text-[12px] font-medium text-[var(--text-secondary)] mb-1.5 block">{t.lineHeight}</label>
