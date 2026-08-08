@@ -37,6 +37,14 @@ const parseTextShadow = (shadowStr) => {
   return null;
 };
 
+export const SOCIAL_FORMATS = {
+  '1:1': { width: 1200, height: 1200, safeX: 0.12, safeY: 0.12 },
+  '4:5': { width: 1080, height: 1350, safeX: 0.12, safeY: 0.1 },
+  '16:9': { width: 1200, height: 675, safeX: 0.1, safeY: 0.12 },
+};
+
+const getSocialFormat = (aspectRatio) => SOCIAL_FORMATS[aspectRatio] || SOCIAL_FORMATS['1:1'];
+
 // CJK-aware character and word-level line wrapping algorithm
 const wrapTextCJK = (ctx, text, maxWidth) => {
   const paragraphs = text.split('\n');
@@ -108,10 +116,15 @@ const wrapTextCJK = (ctx, text, maxWidth) => {
 export const renderCardToCanvas = async () => {
   const { bgStyle, bgPosition, aspectRatio, fontFamily, fontSize, lineHeight, textColor, customBgImage } = useUIStore.getState();
   const { englishText } = useEditorStore.getState();
-  
+
+  if (document.fonts?.ready) {
+    await document.fonts.ready;
+  }
+
+  const format = getSocialFormat(aspectRatio);
+  const { width, height } = format;
   const is169 = aspectRatio === '16:9';
-  const width = 1200;
-  const height = is169 ? 675 : 1200;
+  const is45 = aspectRatio === '4:5';
   
   const canvas = document.createElement('canvas');
   canvas.width = width;
@@ -322,10 +335,11 @@ export const renderCardToCanvas = async () => {
   // 2. Draw Text Layer
   const isHandwrittenFont = /Gaegu|Single Day|Poor Story|Gamja Flower|Hi Melody|Dancing Script|Caveat/i.test(fontFamily);
   
-  let fontSizeInPx = is169 ? 90 : 105; // medium defaults
-  if (fontSize === 'small') fontSizeInPx = is169 ? 70 : 80;
-  if (fontSize === 'large') fontSizeInPx = is169 ? 120 : 135;
-  if (fontSize === 'xlarge') fontSizeInPx = is169 ? 150 : 180;
+  const widthScale = width / 1200;
+  let fontSizeInPx = (is169 ? 90 : is45 ? 96 : 105) * widthScale;
+  if (fontSize === 'small') fontSizeInPx = (is169 ? 70 : is45 ? 74 : 80) * widthScale;
+  if (fontSize === 'large') fontSizeInPx = (is169 ? 120 : is45 ? 124 : 135) * widthScale;
+  if (fontSize === 'xlarge') fontSizeInPx = (is169 ? 150 : is45 ? 156 : 180) * widthScale;
   
   // Heuristic length-based scale to prevent clipping of long paragraphs
   const textLength = englishText?.length || 0;
@@ -340,8 +354,6 @@ export const renderCardToCanvas = async () => {
   if (lineHeight === 'loose') dynamicLineHeight = 2.0;
   if (isHandwrittenFont && lineHeight === 'normal') dynamicLineHeight = 1.28;
   
-  const textLineHeight = fontSizeInPx * dynamicLineHeight;
-  
   const resolvedTextColor = textColor === 'auto'
     ? (isCustomBackground ? '#ffffff' : (currentBgObj?.textColor || '#fff'))
     : textColor;
@@ -350,7 +362,7 @@ export const renderCardToCanvas = async () => {
     ? 'none'
     : (isCustomBackground ? '0 2px 8px rgba(0,0,0,0.5)' : (currentBgObj?.textShadow || 'none'));
     
-  ctx.font = `${isHandwrittenFont ? '500' : '400'} ${fontSizeInPx}px ${fontFamily}`;
+  const fontWeight = isHandwrittenFont ? '500' : '400';
   ctx.fillStyle = resolvedTextColor;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -363,10 +375,30 @@ export const renderCardToCanvas = async () => {
     ctx.shadowOffsetY = shadow.offsetY;
   }
   
-  const paddingX = 140;
+  const paddingX = width * format.safeX;
+  const paddingY = height * format.safeY;
   const maxWidth = width - (paddingX * 2);
-  const lines = wrapTextCJK(ctx, englishText || 'Your text will appear here...', maxWidth);
-  
+  const maxHeight = height - (paddingY * 2);
+  const renderedText = englishText || 'Your text will appear here...';
+
+  let lines = [];
+  let textLineHeight = 0;
+  for (let pass = 0; pass < 8; pass += 1) {
+    ctx.font = `${fontWeight} ${fontSizeInPx}px ${fontFamily}`;
+    lines = wrapTextCJK(ctx, renderedText, maxWidth);
+    textLineHeight = fontSizeInPx * dynamicLineHeight;
+    const totalHeight = lines.length * textLineHeight;
+
+    if (totalHeight <= maxHeight) break;
+
+    const fitScale = Math.min(0.96, (maxHeight / totalHeight) * 0.97);
+    fontSizeInPx = Math.max(24 * widthScale, fontSizeInPx * fitScale);
+  }
+
+  ctx.font = `${fontWeight} ${fontSizeInPx}px ${fontFamily}`;
+  lines = wrapTextCJK(ctx, renderedText, maxWidth);
+  textLineHeight = fontSizeInPx * dynamicLineHeight;
+
   const totalTextHeight = lines.length * textLineHeight;
   let startY = (height / 2) - (totalTextHeight / 2) + (textLineHeight / 2);
   

@@ -151,13 +151,23 @@ export const Toolbar = () => {
             <button 
               className={`relative z-10 flex-1 py-1.5 text-[12px] rounded-md transition-colors ${aspectRatio === '1:1' ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`} 
               onClick={() => setAspectRatio('1:1')}
+              title="Square 1:1"
             >
               {aspectRatio === '1:1' && <motion.div layoutId="ratio-mode" className="absolute inset-0 bg-[var(--border-color)] rounded-md shadow-sm -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />}
               1:1
             </button>
+            <button
+              className={`relative z-10 flex-1 py-1.5 text-[12px] rounded-md transition-colors ${aspectRatio === '4:5' ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+              onClick={() => setAspectRatio('4:5')}
+              title="Threads 4:5"
+            >
+              {aspectRatio === '4:5' && <motion.div layoutId="ratio-mode" className="absolute inset-0 bg-[var(--border-color)] rounded-md shadow-sm -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />}
+              4:5
+            </button>
             <button 
               className={`relative z-10 flex-1 py-1.5 text-[12px] rounded-md transition-colors ${aspectRatio === '16:9' ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`} 
               onClick={() => setAspectRatio('16:9')}
+              title="X 16:9"
             >
               {aspectRatio === '16:9' && <motion.div layoutId="ratio-mode" className="absolute inset-0 bg-[var(--border-color)] rounded-md shadow-sm -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />}
               16:9
