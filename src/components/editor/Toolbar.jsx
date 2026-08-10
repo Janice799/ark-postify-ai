@@ -43,7 +43,7 @@ const resolveFontSize = (value) => {
 };
 
 export const Toolbar = () => {
-  const { aspectRatio, setAspectRatio, fontFamily, setFontFamily, bgPosition, setBgPosition, fontSize, setFontSize, lineHeight, setLineHeight, textColor, setTextColor, customBgImage, setCustomBgImage, setBgStyle, bgStyle, myImages, setMyImages, addMyImage, removeMyImage, setActiveCategory, lang } = useUIStore();
+  const { aspectRatio, setAspectRatio, fontFamily, setFontFamily, bgPosition, setBgPosition, fontSize, setFontSize, effectiveFontSize, lineHeight, setLineHeight, textColor, setTextColor, customBgImage, setCustomBgImage, setBgStyle, bgStyle, myImages, setMyImages, addMyImage, removeMyImage, setActiveCategory, lang } = useUIStore();
   const t = translations[lang || 'en'].editor;
 
   const getLocalizedFontLabel = (font) => {
@@ -59,6 +59,12 @@ export const Toolbar = () => {
 
   const [isFontOpen, setIsFontOpen] = useState(false);
   const [fontSizeInput, setFontSizeInput] = useState(String(resolveFontSize(fontSize)));
+  const [prevFontSize, setPrevFontSize] = useState(fontSize);
+
+  if (fontSize !== prevFontSize) {
+    setPrevFontSize(fontSize);
+    setFontSizeInput(String(resolveFontSize(fontSize)));
+  }
   const fontRef = useRef(null);
   const fileInputRef = useRef(null);
   const colorInputRef = useRef(null);
@@ -81,14 +87,10 @@ export const Toolbar = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    setFontSizeInput(String(resolveFontSize(fontSize)));
-  }, [fontSize]);
-
   const commitFontSize = () => {
     const parsedValue = Number(fontSizeInput);
     const nextValue = Number.isFinite(parsedValue)
-      ? Math.min(220, Math.max(24, Math.round(parsedValue)))
+      ? Math.min(400, Math.max(20, Math.round(parsedValue)))
       : 105;
     setFontSizeInput(String(nextValue));
     setFontSize(nextValue);
@@ -117,13 +119,13 @@ export const Toolbar = () => {
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, w, h);
       const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
-      
+
       const newImage = {
         id: 'upload-' + Date.now(),
         data: compressedDataUrl,
         timestamp: Date.now()
       };
-      
+
       // Save to IndexedDB and state
       const saved = await saveImageToDB(newImage);
       if (!saved) {
@@ -132,7 +134,7 @@ export const Toolbar = () => {
         return;
       }
       addMyImage(newImage);
-      
+
       setCustomBgImage(compressedDataUrl);
       setBgStyle(`custom-${newImage.id}`);
       setActiveCategory('My Uploads');
@@ -174,8 +176,8 @@ export const Toolbar = () => {
         <div className="flex-1">
           <label className="text-[12px] font-medium text-[var(--text-secondary)] mb-1.5 block">{t.ratio}</label>
           <div className="relative flex bg-[var(--glass-bg)] p-1 rounded-lg border border-[var(--border-color)]">
-            <button 
-              className={`relative z-10 flex-1 py-1.5 text-[12px] rounded-md transition-colors ${aspectRatio === '1:1' ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`} 
+            <button
+              className={`relative z-10 flex-1 py-1.5 text-[12px] rounded-md transition-colors ${aspectRatio === '1:1' ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
               onClick={() => setAspectRatio('1:1')}
               title="Square 1:1"
             >
@@ -190,8 +192,8 @@ export const Toolbar = () => {
               {aspectRatio === '4:5' && <motion.div layoutId="ratio-mode" className="absolute inset-0 bg-[var(--border-color)] rounded-md shadow-sm -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />}
               4:5
             </button>
-            <button 
-              className={`relative z-10 flex-1 py-1.5 text-[12px] rounded-md transition-colors ${aspectRatio === '16:9' ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`} 
+            <button
+              className={`relative z-10 flex-1 py-1.5 text-[12px] rounded-md transition-colors ${aspectRatio === '16:9' ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
               onClick={() => setAspectRatio('16:9')}
               title="X 16:9"
             >
@@ -203,22 +205,22 @@ export const Toolbar = () => {
 
         <div className="flex-1 relative" ref={fontRef}>
           <label className="text-[12px] font-medium text-[var(--text-secondary)] mb-1.5 block">{t.fontStyle}</label>
-          <div 
+          <div
             onClick={() => setIsFontOpen(!isFontOpen)}
             className="w-full bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-lg p-2 text-[13px] text-[var(--text-primary)] flex justify-between items-center cursor-pointer hover:border-[var(--accent-color)] transition-colors"
             style={{ fontFamily: fontFamily }}
           >
             <span className="truncate">
-              {FONT_OPTIONS.find(f => f.value === fontFamily) 
-                ? getLocalizedFontLabel(FONT_OPTIONS.find(f => f.value === fontFamily)) 
+              {FONT_OPTIONS.find(f => f.value === fontFamily)
+                ? getLocalizedFontLabel(FONT_OPTIONS.find(f => f.value === fontFamily))
                 : 'Select Font'}
             </span>
             <ChevronDown size={14} className={`text-[var(--text-secondary)] transition-transform flex-shrink-0 ml-1 ${isFontOpen ? 'rotate-180' : ''}`} />
           </div>
-          
+
           <AnimatePresence>
             {isFontOpen && (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
@@ -226,7 +228,7 @@ export const Toolbar = () => {
                 className="absolute top-[100%] left-0 w-full mt-1 bg-[var(--bg-color)] border border-[var(--glass-border)] rounded-xl shadow-2xl z-50 overflow-hidden"
               >
                 {FONT_OPTIONS.map((font) => (
-                  <div 
+                  <div
                     key={font.value}
                     onClick={() => {
                       setFontFamily(font.value);
@@ -245,46 +247,105 @@ export const Toolbar = () => {
         </div>
       </div>
 
-      {/* Row 2: Font Size + Line Height */}
-      <div className="flex gap-3">
-        <div className="flex-1">
-          <label className="text-[12px] font-medium text-[var(--text-secondary)] mb-1.5 block">{t.fontSize} (px)</label>
-          <input
-            type="number"
-            min="24"
-            max="220"
-            step="2"
-            inputMode="numeric"
-            value={fontSizeInput}
-            onChange={(e) => {
-              const nextInput = e.target.value;
-              setFontSizeInput(nextInput);
-              const nextValue = Number(nextInput);
-              if (nextInput !== '' && Number.isFinite(nextValue) && nextValue >= 24 && nextValue <= 220) {
-                setFontSize(nextValue);
-              }
-            }}
-            onBlur={commitFontSize}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') e.currentTarget.blur();
-            }}
-            aria-label={`${t.fontSize} in pixels`}
-            className="w-full bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-lg p-2 text-[13px] text-[var(--text-primary)] outline-none tabular-nums focus:border-[var(--accent-color)]"
-          />
+      {/* Row 2: Font Size Slider/Input + Presets + Auto-fit Warning */}
+      <div className="flex flex-col gap-2">
+        <div className="flex gap-3 items-end">
+          <div className="flex-1">
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-[12px] font-medium text-[var(--text-secondary)]">{t.fontSize} (px)</label>
+              <span className="text-[11px] font-semibold tabular-nums text-[var(--text-primary)]">{resolveFontSize(fontSize)}px</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="range"
+                min="20"
+                max="400"
+                step="2"
+                value={resolveFontSize(fontSize)}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  setFontSize(val);
+                  setFontSizeInput(String(val));
+                }}
+                className="flex-1 h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-[var(--accent-color)]"
+              />
+              <input
+                type="number"
+                min="20"
+                max="400"
+                step="2"
+                inputMode="numeric"
+                value={fontSizeInput}
+                onChange={(e) => {
+                  const nextInput = e.target.value;
+                  setFontSizeInput(nextInput);
+                  const nextValue = Number(nextInput);
+                  if (nextInput !== '' && Number.isFinite(nextValue) && nextValue >= 20 && nextValue <= 400) {
+                    setFontSize(nextValue);
+                  }
+                }}
+                onBlur={commitFontSize}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') e.currentTarget.blur();
+                }}
+                aria-label={`${t.fontSize} in pixels`}
+                className="w-16 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-lg px-2 py-1 text-[12px] text-[var(--text-primary)] outline-none tabular-nums text-center focus:border-[var(--accent-color)]"
+              />
+            </div>
+          </div>
+
+          <div className="w-1/3 flex flex-col justify-end">
+            <label className="text-[12px] font-medium text-[var(--text-secondary)] mb-1 block">{t.lineHeight}</label>
+            <select
+              value={lineHeight}
+              onChange={(e) => setLineHeight(e.target.value)}
+              className="w-full bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-lg p-1.5 text-[12px] text-[var(--text-primary)] outline-none cursor-pointer focus:border-[var(--accent-color)]"
+            >
+              <option value="tight">{t.lhTight}</option>
+              <option value="normal">{t.lhNormal}</option>
+              <option value="relaxed">{t.lhRelaxed}</option>
+              <option value="loose">{t.lhLoose}</option>
+            </select>
+          </div>
         </div>
-        <div className="flex-1">
-          <label className="text-[12px] font-medium text-[var(--text-secondary)] mb-1.5 block">{t.lineHeight}</label>
-          <select 
-            value={lineHeight} 
-            onChange={(e) => setLineHeight(e.target.value)}
-            className="w-full bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-lg p-2 text-[13px] text-[var(--text-primary)] outline-none cursor-pointer focus:border-[var(--accent-color)]"
-          >
-            <option value="tight">{t.lhTight}</option>
-            <option value="normal">{t.lhNormal}</option>
-            <option value="relaxed">{t.lhRelaxed}</option>
-            <option value="loose">{t.lhLoose}</option>
-          </select>
+
+        {/* Font Presets */}
+        <div className="flex gap-1.5 pt-1">
+          {[
+            { key: 'presetHero', size: 240, label: 'Hero' },
+            { key: 'presetTitle', size: 160, label: 'Title' },
+            { key: 'presetBody', size: 100, label: 'Body' },
+            { key: 'presetSmall', size: 60, label: 'Small' },
+          ].map((preset) => {
+            const currentSize = resolveFontSize(fontSize);
+            const isActive = Math.abs(currentSize - preset.size) <= 2;
+            return (
+              <button
+                key={preset.size}
+                type="button"
+                onClick={() => {
+                  setFontSize(preset.size);
+                  setFontSizeInput(String(preset.size));
+                }}
+                className={`flex-1 py-1 rounded-md text-[10px] font-medium transition-all border ${
+                  isActive
+                    ? 'bg-[var(--accent-color)] text-white border-transparent font-bold shadow-sm'
+                    : 'bg-white/5 text-[var(--text-secondary)] border-white/10 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                {t[preset.key] || preset.label} ({preset.size})
+              </button>
+            );
+          })}
         </div>
+
+        {/* Auto-Fit Feedback Badge */}
+        {effectiveFontSize && (resolveFontSize(fontSize) - effectiveFontSize >= 4) && (
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] font-medium animate-fade-in">
+            <span className="text-amber-400">💡</span>
+            <span>{t.autoFitNotice} <strong className="underline decoration-amber-400">{effectiveFontSize}px</strong></span>
+          </div>
+        )}
       </div>
 
       {/* Row 3: Text Color (swatches + color picker) */}
@@ -296,7 +357,7 @@ export const Toolbar = () => {
               key={preset.value}
               onClick={() => setTextColor(preset.value)}
               className={`relative flex items-center justify-center transition-all ${
-                preset.value === 'auto' 
+                preset.value === 'auto'
                   ? `px-2.5 py-1 rounded-md text-[11px] font-medium ${textColor === 'auto' ? 'bg-[var(--border-color)] text-[var(--text-primary)]' : 'bg-[var(--glass-bg)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'} border border-[var(--border-color)]`
                   : `w-6 h-6 rounded-full ${textColor === preset.value ? 'ring-2 ring-offset-1 ring-[var(--accent-color)] ring-offset-[var(--bg-color)]' : 'hover:scale-110'}`
               }`}
@@ -315,9 +376,9 @@ export const Toolbar = () => {
           >
             {(textColor === 'auto' || COLOR_PRESETS.find(p => p.value === textColor)) && <Palette size={10} className="text-[var(--text-secondary)]" />}
           </button>
-          <input 
+          <input
             ref={colorInputRef}
-            type="color" 
+            type="color"
             value={textColor === 'auto' ? '#ffffff' : textColor}
             onChange={(e) => setTextColor(e.target.value)}
             className="hidden"
@@ -330,9 +391,9 @@ export const Toolbar = () => {
         <label className="text-[12px] font-medium text-[var(--text-secondary)] mb-1.5 block">{t.bgPosition}</label>
         <div className="relative flex bg-[var(--glass-bg)] p-1 rounded-lg border border-[var(--border-color)]">
           {['top', 'center', 'bottom'].map((pos) => (
-            <button 
+            <button
               key={pos}
-              className={`relative z-10 flex-1 py-1.5 text-[12px] rounded-md transition-colors ${bgPosition === pos ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`} 
+              className={`relative z-10 flex-1 py-1.5 text-[12px] rounded-md transition-colors ${bgPosition === pos ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
               onClick={() => setBgPosition(pos)}
             >
               {bgPosition === pos && <motion.div layoutId="pos-mode" className="absolute inset-0 bg-[var(--border-color)] rounded-md shadow-sm -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />}
@@ -349,7 +410,7 @@ export const Toolbar = () => {
         </label>
         {customBgImage ? (
           <div className="flex gap-2">
-            <div 
+            <div
               className={`flex-1 bg-[var(--glass-bg)] border rounded-lg p-2 text-[12px] text-[var(--text-primary)] flex items-center gap-2 cursor-pointer hover:border-[var(--accent-color)] transition-colors ${bgStyle?.startsWith('custom-') ? 'border-[var(--accent-color)]' : 'border-[var(--glass-border)]'}`}
               onClick={() => {
                 const matchingImage = useUIStore.getState().myImages.find(img => img.data === customBgImage);
@@ -367,7 +428,7 @@ export const Toolbar = () => {
             <button onClick={() => { setCustomBgImage(null); setBgStyle('mesh-sunset'); }} className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-lg px-2 text-[var(--text-secondary)] hover:text-red-400 hover:border-red-400 transition-colors"><X size={12} /></button>
           </div>
         ) : (
-          <button 
+          <button
             onClick={() => fileInputRef.current?.click()}
             className="w-full bg-[var(--glass-bg)] border border-dashed border-[var(--glass-border)] rounded-lg p-2.5 text-[12px] text-[var(--text-secondary)] flex items-center justify-center gap-2 cursor-pointer hover:border-[var(--accent-color)] hover:text-[var(--text-primary)] transition-colors"
           >

@@ -48,6 +48,10 @@ export const CanvasRenderer = forwardRef((props, ref) => {
         const context = preview.getContext('2d');
         context.clearRect(0, 0, preview.width, preview.height);
         context.drawImage(rendered, 0, 0);
+
+        if (rendered.effectiveFontSize !== undefined) {
+          useUIStore.getState().setEffectiveFontSize(rendered.effectiveFontSize);
+        }
       } catch (error) {
         console.error('Failed to render preview canvas:', error);
       }

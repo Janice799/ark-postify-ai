@@ -104,8 +104,7 @@ const runGenerationRequest = async ({ action = 'generate', errorLabel }) => {
     setKoreanTranslation(data?.translation || '');
   } catch (error) {
     console.error('Translation stream error:', error);
-    setEnglishText(`${errorLabel}: ${error.message}`);
-    setKoreanTranslation('');
+    useUIStore.getState().showToast(`${errorLabel}: ${error.message}`, 'error');
   } finally {
     setIsTranslating(false);
   }

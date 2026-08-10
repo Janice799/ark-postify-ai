@@ -12,7 +12,7 @@ const LEGACY_FONT_SIZES = {
 const normalizeFontSize = (value) => {
   const migratedValue = LEGACY_FONT_SIZES[value] ?? Number(value);
   if (!Number.isFinite(migratedValue)) return 105;
-  return Math.min(220, Math.max(24, Math.round(migratedValue)));
+  return Math.min(400, Math.max(20, Math.round(migratedValue)));
 };
 
 // Custom storage that strips customBgImage and user before saving
@@ -128,6 +128,9 @@ export const useUIStore = create(
       
       fontSize: 105,
       setFontSize: (size) => set({ fontSize: normalizeFontSize(size) }),
+
+      effectiveFontSize: null,
+      setEffectiveFontSize: (size) => set({ effectiveFontSize: size }),
       
       lineHeight: 'normal',
       setLineHeight: (height) => set({ lineHeight: height }),

@@ -89,7 +89,7 @@ export const Sidebar = () => {
 
   return (
     <nav className="w-[88px] h-full bg-[var(--bg-panel)] border-r border-[var(--border-color)] flex flex-col items-center py-6 flex-shrink-0 z-20">
-      <div className="mb-10 w-14 h-14 flex items-center justify-center rounded-[18px] shadow-lg overflow-hidden border border-white/10 bg-black">
+      <div className="mb-10 size-16 flex items-center justify-center rounded-[20px] shadow-lg overflow-hidden border border-white/10 bg-black">
         <img src="/icon.png" alt="Postify AI Logo" className="w-full h-full object-cover" />
       </div>
       

@@ -336,7 +336,7 @@ export const renderCardToCanvas = async () => {
   const legacyFontSizes = { small: 80, medium: 105, large: 135, xlarge: 180 };
   const requestedFontSize = legacyFontSizes[fontSize] ?? Number(fontSize);
   let fontSizeInPx = Number.isFinite(requestedFontSize)
-    ? Math.min(220, Math.max(24, requestedFontSize))
+    ? Math.min(400, Math.max(20, requestedFontSize))
     : 105;
   
   let dynamicLineHeight = 1.5;
@@ -383,7 +383,7 @@ export const renderCardToCanvas = async () => {
     if (totalHeight <= maxHeight) break;
 
     const fitScale = Math.min(0.96, (maxHeight / totalHeight) * 0.97);
-    fontSizeInPx = Math.max(24, fontSizeInPx * fitScale);
+    fontSizeInPx = Math.max(20, fontSizeInPx * fitScale);
   }
 
   ctx.font = `${fontWeight} ${fontSizeInPx}px ${fontFamily}`;
@@ -397,7 +397,8 @@ export const renderCardToCanvas = async () => {
     ctx.fillText(line, width / 2, startY);
     startY += textLineHeight;
   }
-  
+
+  canvas.effectiveFontSize = Math.round(fontSizeInPx);
   return canvas;
 };
 
